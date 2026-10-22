@@ -6,7 +6,7 @@ function folderIcon(id) {
 }
 
 export function desktopFolders() {
-  return personalFolders.map((folder, index) => `<button class="desktop-folder" data-nav="${e(folder.id)}" style="--folder-index:${index}" aria-label="Open ${e(folder.label)} folder" aria-description="Drag to move. Shift and arrow keys also move this folder." aria-keyshortcuts="Shift+ArrowUp Shift+ArrowDown Shift+ArrowLeft Shift+ArrowRight">${folderIcon(folder.id)}<span class="desktop-folder-label">${e(folder.label)}</span><small>${folder.entries.length} items</small></button>`).join('');
+  return personalFolders.map((folder, index) => `<button class="desktop-folder" data-nav="${e(folder.id)}" style="--folder-index:${index}" aria-label="Open ${e(folder.label)} folder" aria-description="Drag to move; release to snap to the grid. Shift and arrow keys move between free slots." aria-keyshortcuts="Shift+ArrowUp Shift+ArrowDown Shift+ArrowLeft Shift+ArrowRight">${folderIcon(folder.id)}<span class="desktop-folder-label">${e(folder.label)}</span><small>${folder.entries.length} items</small></button>`).join('');
 }
 
 function artwork(entry) {

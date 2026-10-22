@@ -120,7 +120,7 @@ function moveLens() {
 }
 
 initializeChrome();
-const folderLayout = new FolderLayout($('#desktop-folders'));
+const folderLayout = new FolderLayout($('#desktop-folders'), { obstacles: () => [$('#profile-widget').getBoundingClientRect()] });
 new DockMagnifier($('#dock'));
 const desktop = new DesktopWindows({
   definitions,

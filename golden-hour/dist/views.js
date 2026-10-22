@@ -17,7 +17,8 @@ function portrait() {
 }
 
 export function desktopIdentity() {
-  return `<div class="desktop-identity">${profile.portrait ? `<img class="identity-photo" data-profile-photo src="${e(profile.portrait)}" alt="" width="66" height="88" decoding="async">` : ''}<div><h1>${e(profile.fullName || profile.name)}</h1><p>${e(profile.role)}</p><button class="identity-open" data-nav="about">Open portfolio ${icon('arrow')}</button></div></div>`;
+  const name = profile.fullName || profile.name;
+  return `<button class="desktop-profile-widget" id="profile-widget" type="button" data-nav="about" aria-label="Open ${e(name)}’s profile">${profile.portrait ? `<img class="profile-widget-photo" data-profile-photo src="${e(profile.portrait)}" alt="" width="218" height="248" decoding="async" draggable="false">` : ''}<span class="profile-widget-caption"><span class="profile-widget-copy"><strong class="profile-widget-name">${e(name)}</strong><span class="profile-widget-role">${e(profile.role)}</span></span><span class="profile-widget-open" aria-hidden="true">${icon('arrow')}</span></span></button>`;
 }
 
 export function aboutView() {

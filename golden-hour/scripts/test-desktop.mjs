@@ -77,7 +77,7 @@ Object.assign(globalThis, {
     return id;
   },
   cancelAnimationFrame: id => cancelledFrames.add(id),
-  getComputedStyle: () => ({ paddingLeft: '10' }),
+  getComputedStyle: () => ({ paddingLeft: '10', getPropertyValue: name => name === '--folder-gap' ? String(innerHeight <= 430 ? 6 : innerHeight <= 560 ? 8 : 12) : [...stylesheet.sheet.cssRules].find(rule => rule.selectorText === '.desktop-folders')?.style.getPropertyValue(name) || '' }),
 });
 Object.defineProperty(globalThis, 'performance', { value: { now: () => clock }, configurable: true });
 window.AudioContext = TestAudioContext;
@@ -88,6 +88,11 @@ window.HTMLElement.prototype.setPointerCapture = function () {};
 window.HTMLElement.prototype.getBoundingClientRect = function () {
   const box = (left, top, width, height) => ({ x: left, y: top, left, top, right: left + width, bottom: top + height, width, height });
   if (this.id === 'window-layer' || this.id === 'desktop-folders') return box(0, 33, innerWidth, innerHeight - 33);
+  if (this.id === 'profile-widget') {
+    if (innerWidth < 320 || innerHeight <= 450) return box(0, 0, 0, 0);
+    const compact = innerWidth <= 540 || innerHeight <= 560;
+    return box(compact ? 16 : 24, compact ? 49 : 57, compact ? 176 : 218, compact ? 214 : 248);
+  }
   if (this.classList.contains('desktop-folder')) {
     const height = innerHeight <= 430 ? 76 : innerHeight <= 560 ? 92 : 108;
     const gap = innerHeight <= 430 ? 6 : innerHeight <= 560 ? 8 : 12;
@@ -357,15 +362,57 @@ folderPointer('pointerup', folderRect.left - 70, folderRect.top + 90);
 click('#desktop-folders [data-nav="interests"]');
 assert.equal($('#window-interests'), null, 'Moving a folder does not accidentally open it');
 assert.ok(JSON.parse(storage.get('kirti-folder-layout-v1')).interests.x < folderRect.left);
+const firstSlot = JSON.parse(storage.get('kirti-folder-layout-v1')).interests;
+assert.equal((folderRect.left - firstSlot.x) % (folderRect.width + 12), 0, 'Dropped folders align to grid columns');
+assert.equal((firstSlot.y - 24) % (folderRect.height + 12), 0, 'Dropped folders align to grid rows');
+key(interestsFolder, 'ArrowLeft', { shiftKey: true });
+assert.equal(JSON.parse(storage.get('kirti-folder-layout-v1')).interests.x, firstSlot.x - folderRect.width - 12, 'Keyboard movement advances one grid column');
+const moveFolderTo = (x, y) => {
+  const rect = interestsFolder.getBoundingClientRect();
+  folderPointer('pointerdown', rect.left + 20, rect.top + 20);
+  folderPointer('pointermove', x + 20, y + 20);
+  folderPointer('pointerup', x + 20, y + 20);
+  click('#desktop-folders [data-nav="interests"]');
+};
+const readingFolder = $('#desktop-folders [data-nav="reading-list"]');
+const readingSlot = readingFolder.getBoundingClientRect();
+moveFolderTo(readingSlot.left, readingSlot.top);
+assert.deepEqual(readingFolder.getBoundingClientRect(), readingSlot, 'Dropping onto another folder leaves that folder in place');
+const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+assert.equal(overlaps(interestsFolder.getBoundingClientRect(), readingSlot), false, 'Occupied slots are skipped');
+moveFolderTo(70, 100);
+assert.equal(overlaps(interestsFolder.getBoundingClientRect(), $('#profile-widget').getBoundingClientRect()), false, 'Snapping reserves space for the profile widget');
+innerWidth = 360;
+for (const height of [450, 400]) {
+  innerHeight = height;
+  window.dispatchEvent(new window.Event('resize'));
+  const compactFolders = $$('.desktop-folder').map(folder => folder.getBoundingClientRect());
+  for (const rect of compactFolders) {
+    assert.ok(rect.left >= 8 && rect.right <= innerWidth - 8 && rect.top >= 41 && rect.bottom <= innerHeight - 102, 'Resized layouts stay inside the desktop and above the dock');
+  }
+  for (let index = 0; index < compactFolders.length; index++) for (const sibling of compactFolders.slice(index + 1)) assert.equal(overlaps(compactFolders[index], sibling), false, 'Responsive snapping keeps folders apart');
+}
+innerWidth = 1440; innerHeight = 900;
+window.dispatchEvent(new window.Event('resize'));
+assert.equal(overlaps(interestsFolder.getBoundingClientRect(), $('#profile-widget').getBoundingClientRect()), false, 'Expanding the desktop keeps the widget clear');
+const savedSlots = JSON.parse(storage.get('kirti-folder-layout-v1'));
+const savedX = savedSlots.interests.x;
+savedSlots.interests.x += 19;
+savedSlots.interests.y += 14;
+storage.set('kirti-folder-layout-v1', JSON.stringify(savedSlots));
 const restoredFolders = $('#desktop-folders').cloneNode(true);
 for (const folder of restoredFolders.querySelectorAll('.desktop-folder')) for (const property of ['left', 'top', 'right']) folder.style.removeProperty(property);
-new FolderLayout(restoredFolders);
+new FolderLayout(restoredFolders, { obstacles: () => [$('#profile-widget').getBoundingClientRect()] });
+assert.equal(parseFloat(restoredFolders.querySelector('[data-nav="interests"]').style.left), savedX, 'Existing freeform saved positions migrate to the nearest grid slot');
 assert.equal(parseFloat(restoredFolders.querySelector('[data-nav="interests"]').style.left), JSON.parse(storage.get('kirti-folder-layout-v1')).interests.x, 'Saved folder positions are restored by a new layout instance');
 key(interestsFolder, 'ArrowLeft', { shiftKey: true });
 assert.ok(interestsFolder.style.left);
 click('[data-action="arrange-folders"]');
 assert.equal(interestsFolder.style.left, '', 'Arrange folders restores the column');
 assert.deepEqual(JSON.parse(storage.get('kirti-folder-layout-v1')), {});
+key(interestsFolder, 'ArrowDown', { shiftKey: true });
+assert.equal(JSON.parse(storage.get('kirti-folder-layout-v1')).interests.y, 24 + 3 * (folderRect.height + 12), 'Keyboard movement skips occupied slots in its direction');
+click('[data-action="arrange-folders"]');
 click('#desktop-folders [data-nav="interests"]');
 await until(() => $('#window-interests')?.dataset.windowState === 'open', 'The Interests folder opens its own window');
 assert.match($('#window-interests').textContent, /Sample content/);
@@ -476,8 +523,14 @@ assert.match($('#window-resume').textContent, /8\+ years/);
 assert.equal($$('#window-resume .resume-job').length, 3);
 for (const element of $$('.portfolio-window')) click(`#${element.id} .traffic.close`);
 await until(() => $$('.portfolio-window').length === 0, 'All windows close independently');
-assert.equal($('#desktop-empty').hidden, false);
+assert.equal($('#desktop-widgets').inert, false);
+assert.equal($('#profile-widget .profile-widget-name').textContent, profile.fullName);
 assert.equal($$('#dock .running').length, 0);
+click('#profile-widget');
+await until(() => $('#window-about')?.dataset.windowState === 'open', 'The profile widget opens About');
+assert.ok($('#profile-widget .profile-widget-photo'), 'The photo widget remains on the desktop behind windows');
+click('#window-about .traffic.close');
+await until(() => !$('#window-about'), 'The widget-launched window closes normally');
 assert.equal(errors.length, 0);
 console.error = originalError;
-console.log('Passed: CSS/theme contrast, full name, refresh routing, initial HTML, independent windows and dragging, constrained corner/edge/keyboard resizing and size restoration, movable equal-sized folders and sample previews, saved folder layout and arrangement, brand marks, dock magnification and labels, mobile focus, saved appearance/sound, greeting replay, search, lean Genie frames, résumé, reduced motion, and empty desktop.');
+console.log('Passed: CSS/theme contrast, full name, refresh routing, initial HTML, independent windows and dragging, constrained corner/edge/keyboard resizing and size restoration, folder grid snapping, occupied-slot avoidance, widget clearance, saved-layout migration, responsive placement, profile widget, sample previews, brand marks, dock magnification and labels, mobile focus, saved appearance/sound, greeting replay, search, lean Genie frames, résumé, and reduced motion.');

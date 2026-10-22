@@ -128,7 +128,7 @@ export class DesktopWindows {
       button.classList.toggle('window-minimized', minimized);
       button.setAttribute('aria-description', running ? (minimized ? 'Minimized windows.' : 'Open windows.') : 'Activate to open window.');
     });
-    document.querySelector('#desktop-empty').hidden = [...this.windows.keys()].some(isVisible);
+    document.querySelector('#desktop-widgets').inert = innerWidth <= 760 && [...this.windows.keys()].some(isVisible);
   }
 
   focusContent() { this.windows.get(this.activeId)?.element.querySelector('.content-scroll').focus({ preventScroll: true }); }
