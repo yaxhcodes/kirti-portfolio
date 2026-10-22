@@ -11,8 +11,8 @@ export const profile = {
   experience: '8+',
 };
 
-// Add the final public HTTPS URL before publishing, then run npm run prepare:seo.
-export const site = { url: '' };
+// Keep this aligned with the public production domain, then run npm run prepare:seo.
+export const site = { url: 'https://kirti-portfolio-yaxh.vercel.app/' };
 
 // Replace these clearly marked samples with Kirti's own interests and memories.
 export const personalFolders = [

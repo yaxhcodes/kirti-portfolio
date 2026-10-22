@@ -100,7 +100,7 @@ node scripts/generate-social-card.mjs
 
 Set `PORTFOLIO_PYTHON` to the Python executable if needed. The authoring script currently uses Windows Georgia and Segoe UI fonts. It is not required to run the site.
 
-Before any future public launch, set `site.url` in `dist/profile.js` to the final HTTPS address and run `npm run prepare:seo`. This generates the canonical URL, `og:url`, absolute social image URLs, and a sitemap referenced by `robots.txt`. With the URL empty, the image path is relative for local preview and no production canonical or sitemap is invented. Social platforms cannot fetch a localhost preview; actual search indexing and social scraping can be checked after an explicitly authorized public launch.
+The public production URL is `https://kirti-portfolio-yaxh.vercel.app/`. If the domain changes, update `site.url` in `dist/profile.js` and run `npm run prepare:seo`. This generates the canonical URL, `og:url`, absolute social image URLs, and a sitemap referenced by `robots.txt`; the deployment build also regenerates them. Keep the production page and image publicly accessible so social platforms can fetch their metadata. Previously shared links may retain a cached preview until the platform fetches them again.
 
 ## Design references
 

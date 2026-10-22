@@ -1,2 +1,4 @@
 User-agent: *
 Allow: /
+
+Sitemap: https://kirti-portfolio-yaxh.vercel.app/sitemap.xml
