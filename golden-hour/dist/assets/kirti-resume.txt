@@ -1,0 +1,63 @@
+Kirti Joshi
+
+Senior Software Engineer
+
+Senior Software Engineer with 8+ years of experience building scalable React applications for enterprise and financial services. Focused on accessible interfaces, reusable component systems, maintainable architecture, and reliable feature delivery.
+
+EXPERIENCE
+
+Mphasis | HP
+
+Senior Software Engineer | Aug 2022 — Present
+
+- Own and deliver end-to-end features in a large-scale React application, working closely with design, backend, and QA teams.
+
+- Build reusable, customizable components in Storybook and improve modularity with hooks, higher-order components, and Context API.
+
+- Write unit and integration tests with Jest and React Testing Library; resolve bugs and performance issues across modules.
+
+- Lead an accessibility initiative covering WCAG guidelines, ARIA roles, and screen reader support.
+
+- Review code, mentor junior developers, and contribute to sprint planning and Agile ceremonies.
+
+
+
+Capgemini | Synchrony Bank
+
+Consultant · UI Developer | Jan 2021 — Aug 2022
+
+- Developed scalable interfaces with React 16.8 and 17, Redux, and TypeScript, with cross-browser and device compatibility.
+
+- Partnered with business analysts and product owners to clarify UI requirements and deliver features on schedule.
+
+- Implemented Redux actions and reducers and contributed to the React 17 upgrade.
+
+- Used Storybook for isolated components and React Testing Library for unit and integration coverage.
+
+- Conducted daily code reviews and maintained client coding standards.
+
+
+
+Acnovate | 3D Portal · Adidas · Comment Tool
+
+Software Developer | Jul 2018 — Jan 2021
+
+- Built responsive interfaces for the 3D Portal using React and Redux, from September 2019 to January 2021.
+
+- Developed UI components and application logic for the Adidas Development Extension Project with React 16.8, TypeScript, and HTML5, from October 2018 to September 2019.
+
+- Integrated REST APIs for CRUD operations and implemented Excel data exports in the Comment Tool, from July to October 2018.
+
+- Worked directly with stakeholders to refine requirements and collaborated with QA to troubleshoot issues.
+
+
+
+SKILLS & TOOLS
+
+Front-end development: React.js, JavaScript (ES6+), TypeScript, HTML5, CSS3, SASS, Bootstrap
+
+State & architecture: Redux, Context API, React Hooks, Higher-order components, REST APIs
+
+Testing & quality: Jest, React Testing Library, Enzyme, Storybook, Accessibility, Chrome DevTools
+
+Tools & collaboration: Git, Webpack, Babel, NPM, Jenkins, Figma, VS Code, Agile / Scrum, Jira

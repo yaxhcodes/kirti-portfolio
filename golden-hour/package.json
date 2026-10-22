@@ -1,0 +1,16 @@
+{
+  "name": "kirti-desktop-portfolio",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "start": "node scripts/serve.mjs",
+    "check": "node scripts/check.mjs",
+    "prepare:seo": "node scripts/generate-seo.mjs",
+    "test": "node scripts/test-desktop.mjs && node scripts/test-welcome.mjs"
+  },
+  "devDependencies": {
+    "linkedom": "0.18.14"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "kirti-portfolio-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "node golden-hour/scripts/serve.mjs",
+    "start": "node golden-hour/scripts/serve.mjs",
+    "check": "node golden-hour/scripts/check.mjs",
+    "prepare:seo": "node golden-hour/scripts/generate-seo.mjs",
+    "test": "node golden-hour/scripts/test-desktop.mjs && node golden-hour/scripts/test-welcome.mjs"
+  }
+}
