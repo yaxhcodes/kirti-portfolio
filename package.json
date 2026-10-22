@@ -2,6 +2,7 @@
   "name": "kirti-portfolio-workspace",
   "private": true,
   "scripts": {
+    "build": "npm --prefix golden-hour run build",
     "dev": "node golden-hour/scripts/serve.mjs",
     "start": "node golden-hour/scripts/serve.mjs",
     "check": "node golden-hour/scripts/check.mjs",

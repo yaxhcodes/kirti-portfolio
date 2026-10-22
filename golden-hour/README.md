@@ -117,7 +117,9 @@ Final generation prompt:
 
 ## Source and hosting
 
-Source is maintained in a private GitHub repository at the user's request. The website has not been deployed. `dist/` can be hosted as static files later. The ignored local `.openai/hosting.json` retains an unused reserved Site identity for a future explicitly authorized publication; it is excluded from GitHub and does not indicate a deployment.
+Source is maintained in a private GitHub repository at the user's request. `dist/` is the complete static site. Vercel configuration is provided for both the repository root (output `golden-hour/dist`) and this directory (output `dist`). Both run `npm run build` to refresh initial HTML/metadata and check the deliverable, without Python or installed dependencies. The local preview server is not needed on Vercel.
+
+The ignored local `.openai/hosting.json` retains an unused reserved Sites identity. It is excluded from GitHub and is unrelated to the Vercel deployment.
 
 ## Verification
 

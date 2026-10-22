@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 import { profile, professionalSummary, navigation, projects, experience, personalFolders } from '../dist/profile.js';
 import { views, projectDetail } from '../dist/views.js';
 import { buildMetadata } from './site-metadata.mjs';
@@ -9,6 +10,15 @@ import { aboutView } from '../dist/views.js';
 import { personalFolderView, personalDetail } from '../dist/personal.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
+for (const projectRoot of [root, path.resolve(root, '..')]) {
+  const configPath = path.join(projectRoot, 'vercel.json');
+  if (projectRoot !== root && !existsSync(configPath)) continue;
+  const config = JSON.parse(readFileSync(configPath, 'utf8'));
+  assert.equal(config.framework, null, 'Vercel serves this as a static site');
+  assert.equal(config.buildCommand, 'npm run build');
+  assert.equal(path.resolve(projectRoot, config.outputDirectory), path.resolve(root, 'dist'), 'Both supported Vercel roots publish the site directory');
+  assert.ok(existsSync(path.join(projectRoot, config.outputDirectory, 'index.html')), 'The Vercel output has a root index.html');
+}
 for (const file of readdirSync(`${root}/dist`).filter(file => file.endsWith('.js'))) execFileSync(process.execPath, ['--check', `${root}/dist/${file}`]);
 for (const entry of navigation) assert.equal(typeof views[entry.id], 'function', `${entry.id} has a view`);
 for (const [id, render] of Object.entries(views)) {
