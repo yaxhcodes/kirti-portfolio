@@ -126,14 +126,12 @@ new WidgetLayout($('#desktop-widgets'), { obstacles: () => $$('.desktop-folder')
 new DockMagnifier($('#dock'));
 const liquidGlass = new LiquidGlass();
 liquidGlass.attach($('#dock'));
-liquidGlass.attach($('.menu-bar'));
 liquidGlass.attach($('.profile-widget-caption'), { photo: $('.profile-widget-photo') });
 const desktop = new DesktopWindows({
   definitions,
   render: id => id === 'work' ? workView(workFilter) : views[id] ? views[id]() : personalFolderView(id),
-  onCreate: element => { setTheme(currentTheme, false); setGlass(glass, false); setTint(tinted, false); updateSoundControls(); liquidGlass.attach(element); },
+  onCreate: () => { setTheme(currentTheme, false); setGlass(glass, false); setTint(tinted, false); updateSoundControls(); },
   onStateChange: () => liquidGlass.schedule(),
-  onRemove: element => liquidGlass.detach(element),
   onActiveChange: id => {
     currentView = id;
     const name = profile.fullName || profile.name;
@@ -155,7 +153,6 @@ function showDialog(id) {
   $$('dialog[open]').forEach(dialog => dialog.close());
   const dialog = $(`#${id}`);
   dialog.showModal();
-  liquidGlass.attach(dialog);
   if (id === 'spotlight') {
     $('#spotlight-input').value = '';
     searchIndex = 0;

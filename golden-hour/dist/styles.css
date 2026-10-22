@@ -10,11 +10,12 @@
   color-scheme: light;
   --ink: #1d1d1f;
   --muted: #414148;
-  --faint: #505058;
+  --faint: #47474f;
   --accent: #0066cc;
   --accent-soft: #dfeaf7;
   --panel: 255, 255, 255;
   --surface: 245, 245, 247;
+  --material-base: var(--surface);
   --glass-opacity: .72;
   --glass-tint: 122, 139, 160;
   --glass-tint-alpha: 0;
@@ -22,7 +23,7 @@
   --glass-glow: rgba(255, 255, 255, .12);
   --menu-wash: .7;
   --caption-wash: .64;
-  --link: color-mix(in srgb,var(--accent) 80%,#000);
+  --link: color-mix(in srgb,var(--accent) 75%,#000);
   --line: rgba(29, 29, 31, .14);
   --active: rgba(255,255,255,.65);
   --shadow: 0 30px 80px #00000030, 0 8px 24px #0000001f;
@@ -45,6 +46,7 @@
   --accent-soft: #263e58;
   --panel: 28, 28, 30;
   --surface: 44, 44, 46;
+  --material-base: var(--panel);
   --glass-tint: 91, 117, 159;
   --glass-highlight: .035;
   --glass-glow: rgba(255, 255, 255, .06);
@@ -68,20 +70,20 @@
 
 :root[data-tint="tinted"] { --glass-tint-alpha: .12; }
 
-/* One material across the desktop: clear body, refracted rim, and directional light. */
+/* Large glass surfaces use one neutral fill, without a painted edge overlay. */
 .menu-bar, .portfolio-window, .dock, .menu-dropdown, dialog:not(.welcome-screen), .toast, .dock-tooltip {
-  background: radial-gradient(ellipse at 20% 0%,rgba(255,255,255,var(--glass-highlight)),transparent 65%),linear-gradient(145deg,#ffffff16,transparent 42%,#ffffff08),linear-gradient(rgba(var(--glass-tint),var(--glass-tint-alpha)),rgba(var(--glass-tint),var(--glass-tint-alpha))),rgba(var(--panel),var(--material-opacity,.72));
-  backdrop-filter: blur(var(--material-blur,18px)) saturate(1.3);
-  -webkit-backdrop-filter: blur(var(--material-blur,18px)) saturate(1.3);
+  background: linear-gradient(rgba(var(--glass-tint),var(--glass-tint-alpha)),rgba(var(--glass-tint),var(--glass-tint-alpha))),rgba(var(--material-base),var(--material-opacity,.72));
+  backdrop-filter: blur(var(--material-blur,18px)) saturate(1.12);
+  -webkit-backdrop-filter: blur(var(--material-blur,18px)) saturate(1.12);
 }
-.portfolio-window:before, .dock:before {
+.dock:before {
   content: ''; position: absolute; inset: 0; z-index: 4; border-radius: inherit; pointer-events: none;
   background: radial-gradient(ellipse 65% 14px at 18% 0%,var(--glass-glow),transparent 85%),radial-gradient(ellipse 40% 12px at 90% 100%,var(--glass-glow),transparent 85%);
 }
 .glass-definitions { position: absolute; overflow: hidden; pointer-events: none; }
 .liquid-optics { display: block; position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; user-select: none; }
 .liquid-refractor { display: block; position: absolute; inset: 0; border-radius: inherit; overflow: hidden; }
-.liquid-edge-optics { z-index: 3; opacity: .72; -webkit-mask-image: linear-gradient(180deg,#000,transparent 12px,transparent calc(100% - 12px),#000),linear-gradient(90deg,#000,transparent 12px,transparent calc(100% - 12px),#000); mask-image: linear-gradient(180deg,#000,transparent 12px,transparent calc(100% - 12px),#000),linear-gradient(90deg,#000,transparent 12px,transparent calc(100% - 12px),#000); }
+.liquid-edge-optics { z-index: 3; opacity: .28; -webkit-mask-image: linear-gradient(180deg,#000,transparent 4px,transparent calc(100% - 4px),#000),linear-gradient(90deg,#000,transparent 4px,transparent calc(100% - 4px),#000); mask-image: linear-gradient(180deg,#000,transparent 4px,transparent calc(100% - 4px),#000),linear-gradient(90deg,#000,transparent 4px,transparent calc(100% - 4px),#000); }
 .liquid-wallpaper.wallpaper { position: absolute; inset: auto; top: 0; left: 0; z-index: 0; transform-origin: 0 0; }
 .liquid-photo { position: absolute; top: 0; left: 0; object-fit: cover; object-position: 50% 65%; max-width: none; }
 .liquid-photo-optics { z-index: 0; }
@@ -116,7 +118,7 @@ button:disabled { cursor: default; opacity: .35; }
 .fold-two { width: 112vw; height: 70vw; top: 10vw; left: 32vw; transform: rotate(-38deg); border-radius: 46% 40% 47% 52%; background: linear-gradient(130deg, var(--fold-2) 5%, var(--wallpaper) 48%, var(--fold-2) 90%); box-shadow: inset 8px 10px 22px #fff5, -12px -4px 35px #ffffff29, -12px -6px 35px #62505412; }
 .fold-three { width: 125vw; height: 60vw; top: 31vw; left: -48vw; transform: rotate(26deg); background: linear-gradient(170deg, var(--fold-3), var(--wallpaper) 60%); box-shadow: inset 5px 9px 24px #ffffff65, 0 -8px 30px #766c5f12; }
 .wallpaper-grain { position: absolute; inset: 0; opacity: .045; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%235e5555' opacity='.5' filter='url(%23n)' d='M0 0h180v180H0z'/%3E%3C/svg%3E"); }
-.menu-bar { --material-opacity: calc(.42 + var(--glass-opacity) * .18); --material-blur: 8px; height: 33px; padding: 0 23px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; position: relative; z-index: 30; border: 0; box-shadow: 0 2px 12px #0000000a; user-select: none; }
+.menu-bar { --material-opacity: calc(.34 + var(--glass-opacity) * .12); --material-blur: 8px; height: 33px; padding: 0 23px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; position: relative; z-index: 30; border: 0; box-shadow: 0 2px 12px #0000000a; user-select: none; }
 .menu-left, .menu-right { height: 100%; display: flex; align-items: center; gap: 22px; }
 .menu-left,.menu-right { position: relative; z-index: 4; }
 .menu-left button { font-size: 12px; }
@@ -144,12 +146,12 @@ button:disabled { cursor: default; opacity: .35; }
 .window-layer { position: absolute; inset: 0; z-index: 5; isolation: isolate; pointer-events: none; }
 .portfolio-window { --window-width: 1000px; --window-height: 640px; --material-opacity: calc(.12 + var(--glass-opacity) * .12); --material-blur: calc(6px + var(--glass-opacity) * 8px); position: absolute; top: 46px; left: calc(50% - 64px); margin-left: calc(min(var(--window-width), calc(100vw - 200px)) / -2); width: min(var(--window-width), calc(100vw - 200px)); height: min(var(--window-height), calc(100dvh - 165px)); display: flex; flex-direction: column; overflow: hidden; border-radius: 18px; border: 0; box-shadow: var(--shadow); pointer-events: auto; }
 .portfolio-window.is-background { box-shadow: 0 10px 36px #3b32321a; }
-.portfolio-window.is-background .window-toolbar { background: rgba(var(--surface),.24); }
+.portfolio-window.is-background .window-toolbar { background: rgba(var(--material-base),.48); }
 .portfolio-window.is-background .window-title { color: var(--muted); }
 .portfolio-window.is-background .traffic { filter: saturate(.45); }
 .portfolio-window.expanded { left: 12px; top: 12px; width: calc(100% - 24px); height: calc(100% - 108px); margin-left: 0; }
 .portfolio-window.dragging { user-select: none; }
-.window-toolbar { position: relative; min-height: 56px; height: 56px; display: grid; grid-template-columns: 100px 1fr 100px; align-items: center; padding: 0 20px; border: 0; background: linear-gradient(180deg,#ffffff12,transparent),rgba(var(--panel),.48); cursor: grab; user-select: none; flex-shrink: 0; }
+.window-toolbar { position: relative; min-height: 56px; height: 56px; display: grid; grid-template-columns: 100px 1fr 100px; align-items: center; padding: 0 20px; border: 0; background: rgba(var(--material-base),.6); cursor: grab; user-select: none; flex-shrink: 0; }
 .window-toolbar:active { cursor: grabbing; }
 .window-controls { display: flex; align-items: center; gap: 9px; }
 .traffic { width: 13px; height: 13px; border-radius: 50%; display: grid; place-items: center; position: relative; box-shadow: inset 0 1px 2px #ffffffbd,inset 0 -1px 2px #0002,0 0 0 .5px #0002; }
@@ -168,7 +170,7 @@ button:disabled { cursor: default; opacity: .35; }
 .icon-button:hover { background: var(--active); color: var(--ink); }
 .icon-button .icon { width: 16px; height: 16px; }
 .window-search { justify-self: end; }
-.content-scroll { overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; flex: 1; min-height: 0; scrollbar-width: thin; scrollbar-color: #81776e66 transparent; outline: none; background: linear-gradient(145deg,#ffffff09,transparent 48%),rgba(var(--panel),calc(.73 + var(--glass-opacity) * .08)); }
+.content-scroll { overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; flex: 1; min-height: 0; scrollbar-width: thin; scrollbar-color: #81776e66 transparent; outline: none; background: rgba(var(--material-base),calc(.73 + var(--glass-opacity) * .08)); }
 .rose { background-color: var(--rose); }
 .peach { background-color: var(--peach); }
 .sage { background-color: var(--sage); }
@@ -515,7 +517,7 @@ dialog[open] { animation: dialog-in .25s cubic-bezier(.2,.8,.3,1); }
 
 /* Borderless surfaces separate through soft elevation and a thin translucent body. */
 :is(.personal-file,.theme-option,.mode-options,.filter-button.active,.preview-greeting,.contact-pending,.tag,.sample-badge,.contact-link>span,.search-result.selected) {
-  background: linear-gradient(145deg,#ffffff0d,transparent 60%),rgba(var(--panel),.22);
+  background: rgba(var(--material-base),.22);
   box-shadow: 0 4px 14px #00000008;
 }
 .personal-file:hover,.theme-option:hover,.preview-greeting:hover { background: rgba(var(--panel),.28); box-shadow: 0 4px 14px #0000000a; }
@@ -750,7 +752,7 @@ dialog[open] { animation: dialog-in .25s cubic-bezier(.2,.8,.3,1); }
   .personal-heading { flex-direction: column; gap: 14px; }
 }
 @supports not (backdrop-filter: blur(1px)) {
-  .menu-bar, .portfolio-window, .dock, .menu-dropdown, dialog:not(.welcome-screen), .dock-tooltip, .toast { background: rgba(var(--panel),.98); }
+  .menu-bar, .portfolio-window, .dock, .menu-dropdown, dialog:not(.welcome-screen), .dock-tooltip, .toast { background: rgba(var(--material-base),.98); }
   .profile-widget-caption { background: rgba(var(--panel),.96); }
   .liquid-edge-optics { opacity: .28; }
 }
@@ -758,7 +760,7 @@ dialog[open] { animation: dialog-in .25s cubic-bezier(.2,.8,.3,1); }
   .liquid-edge-optics { display: none; }
 }
 @media (prefers-reduced-transparency: reduce) {
-  .menu-bar,.portfolio-window,.dock,.menu-dropdown,dialog:not(.welcome-screen),.content-scroll,.toast,.dock-tooltip { background: rgb(var(--panel)); backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .menu-bar,.portfolio-window,.dock,.menu-dropdown,dialog:not(.welcome-screen),.content-scroll,.toast,.dock-tooltip { background: rgb(var(--material-base)); backdrop-filter: none; -webkit-backdrop-filter: none; }
   .liquid-optics { display: none; }
   .profile-widget-caption,.profile-widget-caption:after { background: rgb(var(--panel)); }
   .menu-dropdown.has-scene-glass:before { background: rgb(var(--panel)); }
