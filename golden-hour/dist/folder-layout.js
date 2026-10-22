@@ -1,4 +1,5 @@
 import { readPreference, savePreference } from './preferences.js';
+import { installDesktopDrag, placeDesktopItem, overlaps } from './desktop-drag.js';
 
 export class FolderLayout {
   constructor(root, { obstacles = () => [] } = {}) {
@@ -14,42 +15,10 @@ export class FolderLayout {
       }
     } catch (error) { console.warn('The saved folder layout could not be read:', error.name); }
     this.restore();
-    let drag = null, suppressed = null;
-    root.addEventListener('pointerdown', event => {
-      const button = event.target.closest('.desktop-folder');
-      if (!button || event.button !== 0 || drag) return;
-      const rect = button.getBoundingClientRect();
-      const geometry = this.geometry(button);
-      drag = { ...geometry, button, pointerId: event.pointerId, x: event.clientX, y: event.clientY, left: rect.left - geometry.workspace.left, top: rect.top - geometry.workspace.top, moved: false };
-      button.setPointerCapture(event.pointerId);
+    const drag = installDesktopDrag(root, {
+      selector: '.desktop-folder', geometry: button => this.geometry(button),
+      place: placeDesktopItem, commit: (button, position, geometry) => this.commit(button, position, geometry),
     });
-    root.addEventListener('pointermove', event => {
-      if (!drag || event.pointerId !== drag.pointerId) return;
-      const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
-      if (!drag.moved && Math.hypot(dx, dy) < 6) return;
-      event.preventDefault();
-      drag.moved = true;
-      drag.button.classList.add('is-dragging');
-      this.place(drag.button, { x: drag.left + dx, y: drag.top + dy }, drag);
-    });
-    const end = event => {
-      if (!drag || event.pointerId !== drag.pointerId) return;
-      drag.button.classList.remove('is-dragging');
-      if (drag.moved) {
-        this.commit(drag.button, { x: parseFloat(drag.button.style.left), y: parseFloat(drag.button.style.top) }, drag);
-        if (event.type === 'pointerup') {
-          suppressed = drag.button;
-          setTimeout(() => { suppressed = null; }, 0);
-        }
-      }
-      drag = null;
-    };
-    for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) root.addEventListener(event, end);
-    root.addEventListener('click', event => {
-      if (suppressed && event.target.closest('.desktop-folder') === suppressed) {
-        event.preventDefault(); event.stopImmediatePropagation(); suppressed = null;
-      }
-    }, true);
     root.addEventListener('keydown', event => {
       const button = event.target.closest('.desktop-folder');
       if (!button || !event.shiftKey || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
@@ -69,7 +38,7 @@ export class FolderLayout {
       }
     });
     window.addEventListener('resize', () => {
-      if (drag) end({ type: 'pointercancel', pointerId: drag.pointerId });
+      drag.cancel();
       this.restore();
     });
   }
@@ -117,7 +86,7 @@ export class FolderLayout {
       if (obstacle.width <= 0 || obstacle.height <= 0) continue;
       const left = obstacle.left - geometry.workspace.left, top = obstacle.top - geometry.workspace.top;
       for (const cell of cells) {
-        if (cell.x < left + obstacle.width + 8 && cell.x + geometry.width > left - 8 && cell.y < top + obstacle.height + 8 && cell.y + geometry.height > top - 8) occupied.add(cell.key);
+        if (overlaps({ ...cell, width: geometry.width, height: geometry.height }, { x: left, y: top, width: obstacle.width, height: obstacle.height })) occupied.add(cell.key);
       }
     }
     return occupied;
@@ -142,15 +111,9 @@ export class FolderLayout {
   }
 
   remember(button, position, geometry) {
-    this.place(button, position, geometry);
+    placeDesktopItem(button, position, geometry);
     this.positions[button.dataset.nav] = { x: position.x, y: position.y };
     this.save();
-  }
-
-  place(button, position, geometry) {
-    button.style.left = `${Math.max(geometry.edge, Math.min(geometry.maxX, position.x))}px`;
-    button.style.top = `${Math.max(geometry.edge, Math.min(geometry.maxY, position.y))}px`;
-    button.style.right = 'auto';
   }
 
   restore() {
@@ -167,7 +130,7 @@ export class FolderLayout {
       const cell = this.nearest(cells, desired, occupied) || this.nearest(cells, desired);
       occupied.add(cell.key);
       if (saved || cell.x !== original.x || cell.y !== original.y) {
-        this.place(button, cell, geometry);
+        placeDesktopItem(button, cell, geometry);
         if (!saved || saved.x !== cell.x || saved.y !== cell.y) changed = true;
         this.positions[button.dataset.nav] = { x: cell.x, y: cell.y };
       }

@@ -18,7 +18,7 @@ function portrait() {
 
 export function desktopIdentity() {
   const name = profile.fullName || profile.name;
-  return `<button class="desktop-profile-widget" id="profile-widget" type="button" data-nav="about" aria-label="Open ${e(name)}’s profile">${profile.portrait ? `<img class="profile-widget-photo" data-profile-photo src="${e(profile.portrait)}" alt="" width="218" height="248" decoding="async" draggable="false">` : ''}<span class="profile-widget-caption"><span class="profile-widget-copy"><strong class="profile-widget-name">${e(name)}</strong><span class="profile-widget-role">${e(profile.role)}</span></span><span class="profile-widget-open" aria-hidden="true">${icon('arrow')}</span></span></button>`;
+  return `<button class="desktop-profile-widget" id="profile-widget" type="button" data-nav="about" aria-label="Open ${e(name)}’s profile" aria-describedby="widget-move-help">${profile.portrait ? `<img class="profile-widget-photo" data-profile-photo src="${e(profile.portrait)}" alt="" width="218" height="248" decoding="async" draggable="false">` : ''}<span class="profile-widget-caption"><span class="profile-widget-copy"><strong class="profile-widget-name">${e(name)}</strong><span class="profile-widget-role">${e(profile.role)}</span></span><span class="profile-widget-open" aria-hidden="true">${icon('arrow')}</span></span></button><span class="visually-hidden" id="widget-move-help">Drag to move. Hold Shift and use the arrow keys to position the widget.</span>`;
 }
 
 export function aboutView() {

@@ -2,7 +2,7 @@ import { profile, navigation, projects, skillGroups, personalFolders } from './p
 import { icon, escapeHtml as e } from './icons.js';
 import { views, workView, projectDetail } from './views.js';
 import { DesktopWindows } from './desktop.js';
-import { installDockGlass } from './glass.js';
+import { LiquidGlass } from './glass.js';
 import { ClickSounds } from './sound.js';
 import { readPreference, savePreference } from './preferences.js';
 import { themes, modes, themeTokens, resolveAppearance } from './themes.js';
@@ -11,6 +11,7 @@ import { isSection, initialSection } from './routing.js';
 import { showFirstVisitWelcome } from './welcome.js';
 import { desktopFolders, personalFolderView, personalDetail } from './personal.js';
 import { FolderLayout } from './folder-layout.js';
+import { WidgetLayout } from './widget-layout.js';
 
 const $ = selector => document.querySelector(selector);
 const $$ = selector => [...document.querySelectorAll(selector)];
@@ -90,6 +91,7 @@ function updateSoundControls() {
 function initializeChrome() {
   $('.menu-apple').innerHTML = icon('apple');
   $('.menu-right>[data-action="search"]').innerHTML = icon('search');
+  $('.menu-right>[data-action="show-desktop"]').innerHTML = icon('desktop');
   $('.menu-brand').textContent = profile.name;
   $$('.search-icon').forEach(element => element.innerHTML = icon('search'));
   $$('.dialog-close').forEach(element => element.innerHTML = icon('close'));
@@ -121,11 +123,18 @@ function moveLens() {
 
 initializeChrome();
 const folderLayout = new FolderLayout($('#desktop-folders'), { obstacles: () => [$('#profile-widget').getBoundingClientRect()] });
+new WidgetLayout($('#desktop-widgets'), { obstacles: () => $$('.desktop-folder').map(button => button.getBoundingClientRect()) });
 new DockMagnifier($('#dock'));
+const liquidGlass = new LiquidGlass();
+liquidGlass.attach($('#dock'));
+liquidGlass.attach($('.menu-bar'));
+liquidGlass.attach($('.profile-widget-caption'), { photo: $('.profile-widget-photo') });
 const desktop = new DesktopWindows({
   definitions,
   render: id => id === 'work' ? workView(workFilter) : views[id] ? views[id]() : personalFolderView(id),
-  onCreate: () => { setTheme(currentTheme, false); setGlass(glass, false); setTint(tinted, false); updateSoundControls(); },
+  onCreate: element => { setTheme(currentTheme, false); setGlass(glass, false); setTint(tinted, false); updateSoundControls(); liquidGlass.attach(element); },
+  onStateChange: () => liquidGlass.schedule(),
+  onRemove: element => liquidGlass.detach(element),
   onActiveChange: id => {
     currentView = id;
     const name = profile.fullName || profile.name;
@@ -147,6 +156,7 @@ function showDialog(id) {
   $$('dialog[open]').forEach(dialog => dialog.close());
   const dialog = $(`#${id}`);
   dialog.showModal();
+  liquidGlass.attach(dialog);
   if (id === 'spotlight') {
     $('#spotlight-input').value = '';
     searchIndex = 0;
@@ -223,6 +233,7 @@ const actions = {
   search: () => showDialog('spotlight'),
   shortcuts: () => showDialog('shortcuts-dialog'),
   'arrange-folders': () => folderLayout.reset(),
+  'show-desktop': () => desktop.toggleDesktop(),
   tint: () => setTint(!tinted),
   'replay-welcome': () => {
     closeMenus();
@@ -251,6 +262,7 @@ document.addEventListener('click', event => {
     const isOpen = trigger.getAttribute('aria-expanded') === 'true';
     closeMenus();
     $(`#menu-${trigger.dataset.menu}`).hidden = isOpen;
+    if (!isOpen) liquidGlass.attach($(`#menu-${trigger.dataset.menu}`));
     trigger.setAttribute('aria-expanded', String(!isOpen));
     return;
   }
@@ -353,7 +365,6 @@ setTint(tinted, false);
 const initialId = initialSection(location.hash);
 if (initialId !== 'about') document.querySelector('[data-prerendered="about"]')?.remove();
 run(navigate(initialId, false, false).then(showFirstVisitWelcome));
-installDockGlass();
 updateClock();
 setInterval(updateClock, 30_000);
 window.addEventListener('resize', updateClock);

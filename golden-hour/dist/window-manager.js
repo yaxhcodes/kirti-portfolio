@@ -27,6 +27,7 @@ export class WindowManager {
     this.offset = offset;
     this.state = 'minimized';
     this.busy = false;
+    this.visibleRequested = false;
     this.operation = Promise.resolve();
     this.events = new AbortController();
     this.resetPosition();
@@ -60,6 +61,7 @@ export class WindowManager {
   }
 
   setVisible(visible, animate = true) {
+    this.visibleRequested = visible;
     const run = async () => {
       if (visible === !this.element.hidden) return;
       this.busy = true;

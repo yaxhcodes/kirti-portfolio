@@ -2,15 +2,18 @@ import { WindowManager } from './window-manager.js';
 import { icon } from './icons.js';
 
 export class DesktopWindows {
-  constructor({ definitions, render, onCreate, onActiveChange }) {
+  constructor({ definitions, render, onCreate, onActiveChange, onStateChange, onRemove }) {
     this.definitions = definitions;
     this.render = render;
     this.onCreate = onCreate;
     this.onActiveChange = onActiveChange;
+    this.onStateChange = onStateChange;
+    this.onRemove = onRemove;
     this.windows = new Map();
     this.order = [];
     this.activeId = null;
     this.requestedId = null;
+    this.desktopSnapshot = null;
     this.layer = document.querySelector('#window-layer');
     window.addEventListener('resize', () => {
       this.windows.forEach(entry => entry.controller.resetPosition());
@@ -43,7 +46,7 @@ export class DesktopWindows {
     entry.controller = new WindowManager(element, document.querySelector(`#dock [data-nav="${definition.dockId || id}"]`), {
       offset: this.windows.size % 4,
       onFocus: () => this.focus(id),
-      onStateChange: () => this.update(),
+      onStateChange: () => { this.update(); this.onStateChange?.(); },
     });
     this.windows.set(id, entry);
     this.onCreate(element, id);
@@ -52,12 +55,13 @@ export class DesktopWindows {
 
   async open(id, { animate = true, focusContent = true } = {}) {
     if (!this.definitions[id]) return;
+    await this.restoreDesktop();
     const entry = this.windows.get(id) || this.create(id);
     entry.closing = false;
     this.focus(id);
     await entry.controller.setVisible(true, animate);
     // A newer dock selection takes precedence over an earlier opening animation.
-    if (this.requestedId === id && !entry.closing) {
+    if (this.requestedId === id && !entry.closing && !this.desktopSnapshot) {
       this.focus(id);
       if (focusContent) entry.element.querySelector('.content-scroll').focus({ preventScroll: true });
     }
@@ -65,7 +69,7 @@ export class DesktopWindows {
 
   focus(id) {
     const entry = this.windows.get(id);
-    if (!entry || entry.closing) return;
+    if (!entry || entry.closing || this.desktopSnapshot) return;
     const changed = this.activeId !== id;
     this.requestedId = id;
     this.activeId = id;
@@ -91,6 +95,7 @@ export class DesktopWindows {
     await entry.controller.setVisible(false);
     if (entry.closing) {
       entry.controller.destroy();
+      this.onRemove?.(entry.element);
       entry.element.remove();
       this.windows.delete(id);
       this.order = this.order.filter(item => item !== id);
@@ -100,6 +105,35 @@ export class DesktopWindows {
   }
 
   maximize(id = this.activeId) { this.windows.get(id)?.controller.maximize(); }
+
+  async toggleDesktop() {
+    if (this.desktopSnapshot) return this.restoreDesktop();
+    const ids = this.order.filter(id => {
+      const entry = this.windows.get(id);
+      return entry && !entry.closing && entry.controller.visibleRequested;
+    });
+    if (!ids.length) return;
+    const snapshot = { ids, activeId: this.activeId };
+    this.desktopSnapshot = snapshot;
+    this.requestedId = null;
+    this.update();
+    await Promise.all(ids.map(id => this.windows.get(id).controller.setVisible(false)));
+    this.update();
+    if (this.desktopSnapshot === snapshot) document.querySelector('#desktop').focus({ preventScroll: true });
+  }
+
+  async restoreDesktop() {
+    const snapshot = this.desktopSnapshot;
+    if (!snapshot) return;
+    this.desktopSnapshot = null;
+    this.update();
+    await Promise.all(snapshot.ids.map(id => {
+      const entry = this.windows.get(id);
+      return entry && !entry.closing ? entry.controller.setVisible(true) : undefined;
+    }));
+    if (!this.desktopSnapshot && !this.requestedId && this.windows.has(snapshot.activeId)) this.focus(snapshot.activeId);
+    this.update();
+  }
 
   update(chooseActive = true) {
     const isVisible = id => {
@@ -129,6 +163,13 @@ export class DesktopWindows {
       button.setAttribute('aria-description', running ? (minimized ? 'Minimized windows.' : 'Open windows.') : 'Activate to open window.');
     });
     document.querySelector('#desktop-widgets').inert = innerWidth <= 760 && [...this.windows.keys()].some(isVisible);
+    document.querySelectorAll('[data-action="show-desktop"]').forEach(button => {
+      button.setAttribute('aria-pressed', String(Boolean(this.desktopSnapshot)));
+      button.setAttribute('aria-label', this.desktopSnapshot ? 'Restore windows' : 'Show desktop');
+      button.title = this.desktopSnapshot ? 'Restore windows' : 'Show desktop';
+      const label = button.querySelector('[data-desktop-label]');
+      if (label) label.textContent = this.desktopSnapshot ? 'Restore windows' : 'Show desktop';
+    });
   }
 
   focusContent() { this.windows.get(this.activeId)?.element.querySelector('.content-scroll').focus({ preventScroll: true }); }

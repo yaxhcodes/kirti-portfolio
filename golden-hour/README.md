@@ -80,7 +80,9 @@ dist/
   window-resizer.js   Edge/corner/keyboard resizing and viewport bounds
   preferences.js      Shared themes and resilient local storage
   sound.js            On-demand click synthesis and audio fallback
-  glass.js            Small generated lens displacement map
+  glass.js            Reusable local-source refraction and lens maps
+  desktop-drag.js     Shared desktop drag gestures and collision helpers
+  widget-layout.js    Saved widget placement and grid snapping
   assets/             Self-hosted artwork, favicon, and resume
 scripts/
   serve.mjs           Dependency-free local HTTP server
@@ -88,7 +90,9 @@ scripts/
   generate-resume.*   PDF authoring from shared profile data
 ```
 
-No third-party scripts, remote fonts, analytics, or network services are needed to run the portfolio. The glass dock uses an SVG `feDisplacementMap` on a small decorative surface; text remains on a separate, undistorted layer. The interface includes an opaque fallback when backdrop filtering is unavailable.
+No third-party scripts, remote fonts, analytics, or network services are needed to run the portfolio. The material system covers window bodies, menus, dialogs, the dock, cards, controls, and the profile caption. CSS handles translucent fills, diffusion, tint, and specular edges. SVG displacement maps refract clipped copies of the actual CSS wallpaper at the edges of windows, menus, dialogs, and the dock; the caption refracts a copy of the supplied photo. This samples the known decorative source, rather than refracting arbitrary windows or text behind a surface. Text stays outside the filters. Maps are rebuilt after resizing settles, reused during dragging, and released when windows close. CSS remains usable if canvas or filters are unavailable; reduced motion stops moving highlights, and reduced transparency uses opaque surfaces.
+
+The menu-bar desktop button (also in View) hides the currently visible windows and restores that set without reopening already minimized windows. Window sizes, content state, and stacking order are retained. The photo widget supports pointer dragging and Shift + arrow keys, snaps to a 12px grid, avoids folders, and saves its position locally. Widget and folder dragging share the same gesture handling.
 
 ## Search and link previews
 
@@ -107,7 +111,7 @@ The public production URL is `https://kirti-portfolio-yaxh.vercel.app/`. If the 
 ## Design references
 
 - [Apple's macOS Golden Gate design](https://www.apple.com/os/macos/): consistent window shapes, integrated sidebars, and restrained Liquid Glass.
-- [Aave: Building Glass for the Web](https://aave.com/design/building-glass-for-the-web): a small generated displacement map and crisp content layers inspired the dock lens. This implementation is custom and does not copy Aave's component library.
+- [Aave: Building Glass for the Web](https://aave.com/design/building-glass-for-the-web): generated displacement maps, clipped source layers, and crisp content inspired the refraction system. This implementation is custom and does not copy Aave's component library or depend on Chromium-only SVG backdrop filters.
 
 ## Artwork
 
@@ -129,4 +133,6 @@ The ignored local `.openai/hosting.json` retains an unused reserved Sites identi
 
 For regression tests, run `npm ci` in this directory, then `npm test`. LinkeDOM is a development-only dependency; the deployed website has no package dependencies. Tests load the actual app with controlled DOM, geometry, animation, and audio fixtures. They cover the full name, refresh routing, initial HTML, independent windows, retained state, rapid reopen, dragging, constrained edge/corner/keyboard resizing, size restoration, movable folders, restored folder positions, arrangement, personal previews, brand marks, dock magnification and labels, portrait fallback, sample contacts, mobile focus, appearance/sound preferences, search, lean Genie frames, reduced motion, and the empty desktop. The greeting has separate tests for all five languages, persisted dismissal, refresh, replay, skip, Escape, page exit, storage fallback, and timer cleanup. CSS parsing and text-color contrast against each theme's panel color are checked as well.
 
-The current revision could not be visually inspected in the browser because the browser tool denied access to the existing preview tab. These tests do not substitute for a real browser layout or audible sound check. Screenshots from the original sidebar design in `output/qa/` predate this revision. The updated resume PDF was rendered and both pages visually checked; its current renders use the `resume-v2` prefix.
+The glass tests check neutral centers, inward sampling, symmetric edges, aligned source layers, resize coalescing, map reuse during movement, filter cleanup, photo failures, and the CSS fallback. Desktop tests also cover Show Desktop, its rapid toggle and dock-open behavior, widget dragging and keyboard placement, persisted position, collision avoidance, responsive bounds, and text/link contrast on the least opaque window bodies in all ten appearances.
+
+The current revision could not be visually inspected in the browser because the browser tool denied access to the existing preview tab. These tests do not substitute for a real browser layout, refraction rendering, or audible sound check. Screenshots from the original sidebar design in `output/qa/` predate this revision. The updated resume PDF was rendered and both pages visually checked; its current renders use the `resume-v2` prefix.

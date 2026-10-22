@@ -6,6 +6,7 @@ import { aboutView } from '../dist/views.js';
 import { initialSection } from '../dist/routing.js';
 import { resizeBounds } from '../dist/window-resizer.js';
 import { FolderLayout } from '../dist/folder-layout.js';
+import { WidgetLayout } from '../dist/widget-layout.js';
 import { themes, modes, themeTokens, resolveAppearance } from '../dist/themes.js';
 
 const { parseHTML } = createRequire(import.meta.url)('linkedom');
@@ -23,6 +24,9 @@ function contrast(first, second) {
   const [dark, light] = [luminance(first), luminance(second)].sort((a, b) => a - b);
   return (light + .05) / (dark + .05);
 }
+const rgbHex = rgb => '#' + rgb.map(value => Math.round(value).toString(16).padStart(2, '0')).join('');
+const mix = (first, second, weight) => first.map((channel, index) => channel * weight + second[index] * (1 - weight));
+const fromHex = hex => hex.replace('#', '').match(/../g).map(channel => parseInt(channel, 16));
 for (const mode of Object.keys(modes)) {
   const selector = mode === 'light' ? ':root' : ':root[data-mode="dark"]';
   const rule = [...stylesheet.sheet.cssRules].find(item => item.selectorText === selector);
@@ -36,6 +40,14 @@ for (const mode of Object.keys(modes)) {
     assert.ok(contrast(variant.accent, background) >= 4.5, `${theme}/${mode} links have readable contrast`);
     const selectionInk = mode === 'light' ? '#ffffff' : rule.style.getPropertyValue('--ink');
     assert.ok(contrast(selectionInk, mode === 'light' ? variant.accent : variant.soft) >= 4.5, `${theme}/${mode} selected text stays readable`);
+    const panel = variant.panel.split(',').map(Number);
+    const opacity = .73 + .35 * .08;
+    const rootOpacity = .12 + .35 * .12;
+    const backing = mode === 'light' ? [0, 0, 0] : [255, 255, 255];
+    const glassBody = rgbHex(mix(panel, mix(panel, backing, rootOpacity), opacity));
+    for (const token of ['--ink', '--muted', '--faint']) assert.ok(contrast(rule.style.getPropertyValue(token), glassBody) >= 4.5, `${theme}/${mode} ${token} stays readable on the least opaque glass body`);
+    const link = rgbHex(mix(fromHex(variant.accent), mode === 'light' ? [0, 0, 0] : [255, 255, 255], mode === 'light' ? .8 : .9));
+    assert.ok(contrast(link, glassBody) >= 4.5, `${theme}/${mode} links stay readable on translucent content`);
   }
 }
 const defaultRule = [...stylesheet.sheet.cssRules].find(item => item.selectorText === ':root');
@@ -87,11 +99,11 @@ window.HTMLElement.prototype.focus = function () { document.activeElement = this
 window.HTMLElement.prototype.setPointerCapture = function () {};
 window.HTMLElement.prototype.getBoundingClientRect = function () {
   const box = (left, top, width, height) => ({ x: left, y: top, left, top, right: left + width, bottom: top + height, width, height });
-  if (this.id === 'window-layer' || this.id === 'desktop-folders') return box(0, 33, innerWidth, innerHeight - 33);
+  if (this.id === 'window-layer' || this.id === 'desktop-folders' || this.id === 'desktop-widgets' || this.classList.contains('desktop-widgets')) return box(0, 33, innerWidth, innerHeight - 33);
   if (this.id === 'profile-widget') {
     if (innerWidth < 320 || innerHeight <= 450) return box(0, 0, 0, 0);
     const compact = innerWidth <= 540 || innerHeight <= 560;
-    return box(compact ? 16 : 24, compact ? 49 : 57, compact ? 176 : 218, compact ? 214 : 248);
+    return box(parseFloat(this.style.left) || (compact ? 16 : 24), 33 + (parseFloat(this.style.top) || (compact ? 16 : 24)), compact ? 176 : 218, compact ? 214 : 248);
   }
   if (this.classList.contains('desktop-folder')) {
     const height = innerHeight <= 430 ? 76 : innerHeight <= 560 ? 92 : 108;
@@ -263,6 +275,35 @@ assert.equal($('#window-work'), work);
 assert.equal($$('#window-work .project-card').length, 1);
 assert.equal(work.querySelector('.content-scroll').scrollTop, 81);
 
+click('#window-skills .traffic.minimize');
+await until(() => $('#window-skills').hidden, 'One window is minimized before showing the desktop');
+const visibleBeforeDesktop = $$('.portfolio-window').filter(element => !element.hidden);
+const activeBeforeDesktop = $('.portfolio-window.is-active');
+const placementBeforeDesktop = visibleBeforeDesktop.map(element => [element.id, element.getBoundingClientRect(), element.style.zIndex]);
+click('.desktop-button');
+await until(() => $$('.portfolio-window').every(element => element.hidden), 'Show Desktop hides every visible window');
+assert.equal($('.desktop-button').getAttribute('aria-pressed'), 'true');
+assert.equal($('#desktop-widgets').inert, false);
+assert.equal(document.activeElement, $('#desktop'));
+click('.desktop-button');
+await until(() => visibleBeforeDesktop.every(element => !element.hidden && element.dataset.windowState === 'open'), 'Restore returns the previously visible windows');
+assert.equal($('#window-skills').hidden, true, 'Restore leaves an already minimized window alone');
+assert.equal($('.portfolio-window.is-active'), activeBeforeDesktop, 'Restore returns focus to the previous front window');
+assert.equal(work.querySelector('.content-scroll').scrollTop, 81, 'Show Desktop preserves content position and filters');
+for (const [id, rect, stacking] of placementBeforeDesktop) {
+  assert.deepEqual($(`#${id}`).getBoundingClientRect(), rect, 'Show Desktop preserves window geometry');
+  assert.equal($(`#${id}`).style.zIndex, stacking, 'Show Desktop preserves stacking order');
+}
+click('.desktop-button');
+click('.desktop-button');
+await until(() => visibleBeforeDesktop.every(element => !element.hidden && element.dataset.windowState === 'open'), 'Rapid desktop toggle settles back into the visible state');
+click('.desktop-button');
+await until(() => $$('.portfolio-window').every(element => element.hidden), 'The desktop can be shown again');
+await open('about');
+assert.equal($('.desktop-button').getAttribute('aria-pressed'), 'false', 'Opening an app exits Show Desktop');
+assert.equal($('#window-skills').hidden, true);
+await open('work');
+
 click('#window-experience .traffic.close');
 await until(() => !$('#window-experience'), 'Closing removes only the requested window');
 assert.ok($('#window-about') && $('#window-work') && $('#window-skills'));
@@ -413,6 +454,47 @@ assert.deepEqual(JSON.parse(storage.get('kirti-folder-layout-v1')), {});
 key(interestsFolder, 'ArrowDown', { shiftKey: true });
 assert.equal(JSON.parse(storage.get('kirti-folder-layout-v1')).interests.y, 24 + 3 * (folderRect.height + 12), 'Keyboard movement skips occupied slots in its direction');
 click('[data-action="arrange-folders"]');
+const widget = $('#profile-widget');
+const widgetPointer = (type, x, y, pointerId = 12) => {
+  const event = new window.Event(type, { bubbles: true, cancelable: true });
+  Object.assign(event, { button: 0, pointerId, clientX: x, clientY: y });
+  widget.dispatchEvent(event);
+};
+const widgetStart = widget.getBoundingClientRect();
+widgetPointer('pointerdown', widgetStart.left + 40, widgetStart.top + 40);
+widgetPointer('pointermove', widgetStart.left + 270, widgetStart.top + 180, 99);
+assert.equal(widget.style.left, '24px', 'Other pointers cannot move an active widget gesture');
+widgetPointer('pointermove', widgetStart.left + 270, widgetStart.top + 180);
+widgetPointer('pointerup', widgetStart.left + 270, widgetStart.top + 180);
+const savedWidget = JSON.parse(storage.get('kirti-widget-layout-v1'));
+assert.equal((savedWidget.x - 24) % 12, 0, 'The widget snaps horizontally');
+assert.equal((savedWidget.y - 24) % 12, 0, 'The widget snaps vertically');
+assert.ok(savedWidget.x > 24);
+const activeBeforeWidgetDrag = $('.portfolio-window.is-active');
+click('#profile-widget');
+assert.equal($('.portfolio-window.is-active'), activeBeforeWidgetDrag, 'Moving the widget does not open its About window');
+key(widget, 'ArrowRight', { shiftKey: true });
+assert.equal(JSON.parse(storage.get('kirti-widget-layout-v1')).x, savedWidget.x + 12, 'Keyboard placement advances on the same grid');
+const widgetSavedRoot = $('#desktop-widgets').cloneNode(true);
+document.body.append(widgetSavedRoot);
+const restoredWidget = widgetSavedRoot.querySelector('.desktop-profile-widget');
+restoredWidget.style.left = '24px'; restoredWidget.style.top = '24px';
+new WidgetLayout(widgetSavedRoot, { obstacles: () => $$('.desktop-folder').map(folder => folder.getBoundingClientRect()) });
+assert.equal(parseFloat(restoredWidget.style.left), savedWidget.x + 12, 'A new widget layout restores the saved position');
+widgetSavedRoot.remove();
+const beforeCollision = widget.getBoundingClientRect();
+widgetPointer('pointerdown', beforeCollision.left + 30, beforeCollision.top + 30);
+widgetPointer('pointermove', readingSlot.left + 30, readingSlot.top + 30);
+widgetPointer('pointerup', readingSlot.left + 30, readingSlot.top + 30);
+click('#profile-widget');
+assert.ok($$('.desktop-folder').every(folder => !overlaps(widget.getBoundingClientRect(), folder.getBoundingClientRect())), 'The widget avoids folders when dropped');
+innerWidth = 360; innerHeight = 700;
+window.dispatchEvent(new window.Event('resize'));
+const compactWidget = widget.getBoundingClientRect();
+assert.ok(compactWidget.left >= 16 && compactWidget.right <= innerWidth - 16 && compactWidget.bottom <= innerHeight - 102, 'A saved widget position adapts to mobile bounds');
+assert.ok($$('.desktop-folder').every(folder => !overlaps(compactWidget, folder.getBoundingClientRect())), 'Responsive widget placement keeps folders clear');
+innerWidth = 1440; innerHeight = 900;
+window.dispatchEvent(new window.Event('resize'));
 click('#desktop-folders [data-nav="interests"]');
 await until(() => $('#window-interests')?.dataset.windowState === 'open', 'The Interests folder opens its own window');
 assert.match($('#window-interests').textContent, /Sample content/);
@@ -533,4 +615,4 @@ click('#window-about .traffic.close');
 await until(() => !$('#window-about'), 'The widget-launched window closes normally');
 assert.equal(errors.length, 0);
 console.error = originalError;
-console.log('Passed: CSS/theme contrast, full name, refresh routing, initial HTML, independent windows and dragging, constrained corner/edge/keyboard resizing and size restoration, folder grid snapping, occupied-slot avoidance, widget clearance, saved-layout migration, responsive placement, profile widget, sample previews, brand marks, dock magnification and labels, mobile focus, saved appearance/sound, greeting replay, search, lean Genie frames, résumé, and reduced motion.');
+console.log('Passed: CSS and translucent-content contrast for ten appearances, full name, refresh routing, initial HTML, independent windows and dragging, Show Desktop/restore and rapid toggles, constrained resizing, folder grid snapping and migration, movable widget/keyboard placement/persistence/collision avoidance, responsive bounds, sample previews, brand marks, dock magnification and labels, mobile focus, saved preferences, greeting replay, search, lean Genie frames, résumé, and reduced motion.');
