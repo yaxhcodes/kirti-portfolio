@@ -9,7 +9,7 @@
     "start": "node scripts/serve.mjs",
     "check": "node scripts/check.mjs",
     "prepare:seo": "node scripts/generate-seo.mjs",
-    "test": "node scripts/test-desktop.mjs && node scripts/test-welcome.mjs && node scripts/test-glass.mjs"
+    "test": "node scripts/test-desktop.mjs && node scripts/test-welcome.mjs && node scripts/test-glass.mjs && node scripts/test-appearance.mjs"
   },
   "devDependencies": {
     "linkedom": "0.18.14"

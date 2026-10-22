@@ -48,6 +48,9 @@ for (const mode of Object.keys(modes)) {
     for (const token of ['--ink', '--muted', '--faint']) assert.ok(contrast(rule.style.getPropertyValue(token), glassBody) >= 4.5, `${theme}/${mode} ${token} stays readable on the least opaque glass body`);
     const link = rgbHex(mix(fromHex(variant.accent), mode === 'light' ? [0, 0, 0] : [255, 255, 255], mode === 'light' ? .8 : .9));
     assert.ok(contrast(link, glassBody) >= 4.5, `${theme}/${mode} links stay readable on translucent content`);
+    const menuWash = Number(rule.style.getPropertyValue('--menu-wash'));
+    const menuBody = rgbHex(mix(panel, backing, menuWash));
+    for (const token of ['--ink', '--muted']) assert.ok(contrast(rule.style.getPropertyValue(token), menuBody) >= 4.5, `${theme}/${mode} menu commands and hints remain readable over a sampled scene`);
   }
 }
 const defaultRule = [...stylesheet.sheet.cssRules].find(item => item.selectorText === ':root');

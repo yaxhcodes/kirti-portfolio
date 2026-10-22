@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import { aboutView, desktopIdentity } from '../dist/views.js';
 import { icon } from '../dist/icons.js';
 import { buildMetadata } from './site-metadata.mjs';
+import { appearanceBootScript } from '../dist/appearance.js';
 
 const file = new URL('../dist/index.html', import.meta.url);
 let html = readFileSync(file, 'utf8');
@@ -12,6 +13,7 @@ function replaceBlock(name, content) {
 }
 const metadata = buildMetadata();
 replaceBlock('seo', metadata.tags);
+replaceBlock('appearance-boot', `<script>${appearanceBootScript()}</script>`);
 const template = html.match(/<template id="window-template">([\s\S]*?)<\/template>/)?.[1];
 if (!template) throw new Error('Missing window template');
 const initialWindow = template.trim()

@@ -5,7 +5,8 @@ import { DesktopWindows } from './desktop.js';
 import { LiquidGlass } from './glass.js';
 import { ClickSounds } from './sound.js';
 import { readPreference, savePreference } from './preferences.js';
-import { themes, modes, themeTokens, resolveAppearance } from './themes.js';
+import { themes, modes, themeTokens } from './themes.js';
+import { readAppearance } from './appearance.js';
 import { DockMagnifier } from './dock.js';
 import { isSection, initialSection } from './routing.js';
 import { showFirstVisitWelcome } from './welcome.js';
@@ -20,9 +21,7 @@ let workFilter = 'All';
 let searchResults = [];
 let searchIndex = 0;
 let toastTimer;
-let { theme: currentTheme, mode: currentMode } = resolveAppearance(readPreference('theme'), readPreference('mode'));
-let glass = Math.max(35, Math.min(95, Number(readPreference('glass', 72)) || 72));
-let tinted = readPreference('tint', 'false') === 'true';
+let { theme: currentTheme, mode: currentMode, glass, tinted } = readAppearance();
 const sounds = new ClickSounds(readPreference('muted', 'false') === 'true');
 
 const windowSizes = {
@@ -106,7 +105,7 @@ function initializeChrome() {
 }
 
 function closeMenus() {
-  $$('.menu-dropdown').forEach(menu => menu.hidden = true);
+  $$('.menu-dropdown').forEach(menu => { menu.hidden = true; liquidGlass.detach(menu); });
   $$('.menu-trigger').forEach(button => button.setAttribute('aria-expanded', 'false'));
 }
 
@@ -117,7 +116,7 @@ function moveLens() {
   const dockRect = $('#dock').getBoundingClientRect();
   const itemRect = active.getBoundingClientRect();
   const padding = parseFloat(getComputedStyle($('#dock')).paddingLeft);
-  $('.dock-lens').style.transform = `translateX(${itemRect.left - dockRect.left - padding - 1}px)`;
+  $('.dock-lens').style.transform = `translateX(${itemRect.left - dockRect.left - padding}px)`;
   $('.dock-lens').style.width = `${itemRect.width}px`;
 }
 

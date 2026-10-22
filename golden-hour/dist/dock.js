@@ -125,7 +125,7 @@ export class DockMagnifier {
     for (const item of this.items) {
       if (item.button.classList.contains('active')) {
         const lens = this.dock.querySelector('.dock-lens');
-        lens.style.transform = `translateX(${item.left + precedingExtra - this.padding - 1}px)`;
+        lens.style.transform = `translateX(${item.left + precedingExtra - this.padding}px)`;
         lens.style.width = `${item.width + this.extraWidth(item)}px`;
         break;
       }

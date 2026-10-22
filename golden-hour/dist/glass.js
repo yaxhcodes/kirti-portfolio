@@ -1,3 +1,5 @@
+import { GlassScene } from './glass-scene.js';
+
 // Distort a clipped copy of the source. Foreground text never enters the filter.
 const neutralPixel = new Uint32Array(new Uint8Array([128, 128, 128, 255]).buffer)[0];
 
@@ -35,8 +37,6 @@ export class LiquidGlass {
     catch (error) { console.warn('Refraction is unavailable; using the CSS glass material:', error.name); }
     this.surfaces = new Map();
     this.frame = null;
-    this.pointer = null;
-    this.reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
     if (!this.context) return;
     this.svg = document.createElementNS(svgNamespace, 'svg');
     this.svg.setAttribute('aria-hidden', 'true');
@@ -47,12 +47,9 @@ export class LiquidGlass {
     this.svg.append(this.defs);
     document.body.append(this.svg);
     this.observer = typeof ResizeObserver === 'function' ? new ResizeObserver(() => this.schedule()) : null;
-    document.addEventListener('pointermove', event => {
-      if (event.pointerType !== 'touch' && !this.reducedMotion.matches) this.pointer = { x: event.clientX, y: event.clientY };
-      this.schedule();
-    }, { passive: true });
-    document.addEventListener('pointerleave', () => { this.pointer = null; this.schedule(); });
-    window.addEventListener('resize', () => this.schedule());
+    document.addEventListener('pointermove', () => this.schedule(), { passive: true });
+    window.addEventListener('resize', () => { this.refreshScenes(); this.schedule(); });
+    document.addEventListener('scroll', () => { this.refreshScenes(); this.schedule(); }, { capture: true, passive: true });
     document.addEventListener('animationend', () => this.schedule(), true);
   }
 
@@ -61,23 +58,29 @@ export class LiquidGlass {
     const existing = this.surfaces.get(element);
     if (existing?.optics.isConnected) { this.schedule(); return; }
     if (existing) this.detach(element);
-    const source = photo || document.querySelector('.wallpaper');
+    let scene = null;
+    if (element.matches('.menu-dropdown')) {
+      try { scene = new GlassScene(element.getBoundingClientRect()); }
+      catch (error) { console.warn('The menu is using the wallpaper glass fallback:', error.name); }
+    }
+    const source = photo || document.querySelector('body>.wallpaper');
     if (!source) return;
     const optics = document.createElement('span');
-    optics.className = `liquid-optics ${photo ? 'liquid-photo-optics' : 'liquid-edge-optics'}`;
+    optics.className = `liquid-optics ${scene ? 'liquid-menu-optics' : photo ? 'liquid-photo-optics' : 'liquid-edge-optics'}`;
     optics.setAttribute('aria-hidden', 'true');
     const refractor = document.createElement('span');
     refractor.className = 'liquid-refractor';
-    const sample = source.cloneNode(true);
+    const sample = scene?.element || source.cloneNode(true);
     sample.removeAttribute('id');
     sample.removeAttribute('data-profile-photo');
-    sample.className = photo ? 'liquid-photo' : 'wallpaper liquid-wallpaper';
+    if (!scene) sample.className = photo ? 'liquid-photo' : 'wallpaper liquid-wallpaper';
     sample.querySelector('.wallpaper-grain')?.remove();
     refractor.append(sample);
     optics.append(refractor);
     element.prepend(optics);
     element.classList.add('has-liquid-glass');
-    const surface = { element, optics, refractor, sample, photo, filter: null, size: '', pendingSize: '', timer: null };
+    element.classList.toggle('has-scene-glass', Boolean(scene));
+    const surface = { element, optics, refractor, sample, photo, scene, sceneDirty: false, filter: null, size: '', pendingSize: '', timer: null };
     this.surfaces.set(element, surface);
     this.observer?.observe(element);
     photo?.addEventListener('error', () => this.detach(element), { once: true });
@@ -92,6 +95,7 @@ export class LiquidGlass {
     surface.filter?.remove();
     surface.optics.remove();
     element.classList.remove('has-liquid-glass');
+    element.classList.remove('has-scene-glass');
     this.surfaces.delete(element);
   }
 
@@ -103,10 +107,15 @@ export class LiquidGlass {
     });
   }
 
+  refreshScenes() {
+    for (const surface of this.surfaces.values()) if (surface.scene) surface.sceneDirty = true;
+  }
+
   sync(surface, immediately = false) {
-    const { element, sample, photo } = surface;
+    const { element, sample, photo, scene } = surface;
     const rect = element.getBoundingClientRect();
     if (!rect.width || !rect.height || element.closest('[hidden]') || element.matches('dialog:not([open])') || ['opening', 'minimizing'].includes(element.dataset.windowState)) return;
+    if (surface.sceneDirty) { scene.refresh(rect); surface.sceneDirty = false; }
     const width = Math.round(rect.width), height = Math.round(rect.height);
     const size = `${width}:${height}`;
     if (size !== surface.size && (size !== surface.pendingSize || immediately)) {
@@ -120,19 +129,17 @@ export class LiquidGlass {
       else surface.timer = setTimeout(refresh, 120);
     }
     const source = photo?.getBoundingClientRect() || { left: 0, top: 0, width: innerWidth, height: innerHeight };
-    const placement = `${source.width}:${source.height}:${(source.left - rect.left).toFixed(2)}:${(source.top - rect.top).toFixed(2)}`;
+    const zoom = scene ? 1.012 : 1;
+    const x = (source.left - rect.left) * zoom + rect.width * (1 - zoom) / 2;
+    const y = (source.top - rect.top) * zoom + rect.height * (1 - zoom) / 2;
+    const placement = `${source.width}:${source.height}:${x.toFixed(2)}:${y.toFixed(2)}`;
     if (placement !== surface.placement) {
       sample.style.width = `${source.width}px`;
       sample.style.height = `${source.height}px`;
-      sample.style.transform = `translate(${(source.left - rect.left).toFixed(2)}px,${(source.top - rect.top).toFixed(2)}px)`;
+      sample.style.transform = `translate(${x.toFixed(2)}px,${y.toFixed(2)}px)${scene ? ` scale(${zoom})` : ''}`;
       surface.placement = placement;
     }
-    if (this.pointer && !this.reducedMotion.matches && this.pointer.x >= rect.left && this.pointer.x <= rect.right && this.pointer.y >= rect.top && this.pointer.y <= rect.bottom) {
-      const x = Math.max(0, Math.min(100, (this.pointer.x - rect.left) / rect.width * 100));
-      const y = Math.max(0, Math.min(100, (this.pointer.y - rect.top) / rect.height * 100));
-      element.style.setProperty('--glass-light-x', `${x.toFixed(1)}%`);
-      element.style.setProperty('--glass-light-y', `${y.toFixed(1)}%`);
-    }
+    scene?.restoreScroll();
   }
 
   filter(surface, width, height) {
@@ -143,7 +150,7 @@ export class LiquidGlass {
     this.canvas.width = mapWidth;
     this.canvas.height = mapHeight;
     const pixels = this.context.createImageData(mapWidth, mapHeight);
-    pixels.data.set(displacementPixels(mapWidth, mapHeight, radius * factor, 12 * factor));
+    pixels.data.set(displacementPixels(mapWidth, mapHeight, radius * factor, (surface.scene ? 16 : 12) * factor));
     this.context.putImageData(pixels, 0, 0);
     const filter = document.createElementNS(svgNamespace, 'filter');
     // A new ID also invalidates Safari's cached SVG output when the shape changes.
@@ -152,9 +159,9 @@ export class LiquidGlass {
     filter.setAttribute('x', '0'); filter.setAttribute('y', '0');
     filter.setAttribute('width', '100%'); filter.setAttribute('height', '100%');
     filter.setAttribute('color-interpolation-filters', 'sRGB');
-    filter.innerHTML = `<feImage href="${this.canvas.toDataURL()}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="lens-map"/><feDisplacementMap in="SourceGraphic" in2="lens-map" scale="${surface.photo ? 20 : 26}" xChannelSelector="R" yChannelSelector="G"/>`;
+    filter.innerHTML = `<feImage href="${this.canvas.toDataURL()}" x="0" y="0" width="100%" height="100%" preserveAspectRatio="none" result="lens-map"/><feDisplacementMap in="SourceGraphic" in2="lens-map" scale="${surface.scene ? 26 : 18}" xChannelSelector="R" yChannelSelector="G"/>`;
     this.defs.append(filter);
-    surface.refractor.style.filter = `url(#${id})`;
+    surface.refractor.style.filter = `url(#${id})${surface.scene ? ' blur(1.2px)' : ''}`;
     surface.filter?.remove();
     surface.filter = filter;
   }
