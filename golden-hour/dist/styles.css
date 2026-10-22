@@ -177,7 +177,7 @@ h1,h2,h3,h4,p { margin: 0; }
 h1 em, .page-heading em { color: var(--accent); font-weight: 400; }
 .hero-copy>p { margin-top: 21px; max-width: 455px; font-size: 14px; color: var(--muted); line-height: 1.85; }
 .hero-actions { display: flex; align-items: center; gap: 21px; margin-top: 23px; }
-.primary-button { display: inline-flex; align-items: center; gap: 18px; justify-content: center; background: #0071e3; color: #fff; border: 1px solid #ffffff12; padding: 12px 17px; font-size: 12px; border-radius: 8px; box-shadow: 0 3px 5px #3427200b,inset 0 1px 1px #ffffff2e; transition: transform .2s, box-shadow .2s; font-weight: 450; }
+.primary-button { display: inline-flex; align-items: center; gap: 18px; justify-content: center; background: var(--accent); color: rgb(var(--panel)); border: 1px solid #ffffff12; padding: 12px 17px; font-size: 12px; border-radius: 8px; box-shadow: 0 3px 5px #3427200b,inset 0 1px 1px #ffffff2e; transition: transform .2s, box-shadow .2s; font-weight: 450; }
 .primary-button:hover { transform: translateY(-2px); box-shadow: 0 5px 12px #3427201b; }
 .primary-button .icon { width: 14px; height: 14px; }
 .text-button { font-size: 12px; display: inline-flex; align-items: center; gap: 7px; color: var(--muted); }
