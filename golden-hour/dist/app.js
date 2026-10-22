@@ -4,7 +4,8 @@ import { views, workView, projectDetail } from './views.js';
 import { DesktopWindows } from './desktop.js';
 import { installDockGlass } from './glass.js';
 import { ClickSounds } from './sound.js';
-import { themes, readPreference, savePreference } from './preferences.js';
+import { readPreference, savePreference } from './preferences.js';
+import { themes, modes, themeTokens, resolveAppearance } from './themes.js';
 import { DockMagnifier } from './dock.js';
 import { isSection, initialSection } from './routing.js';
 import { showFirstVisitWelcome } from './welcome.js';
@@ -18,15 +19,14 @@ let workFilter = 'All';
 let searchResults = [];
 let searchIndex = 0;
 let toastTimer;
-let currentTheme = readPreference('theme', 'pearl');
-if (!Object.hasOwn(themes, currentTheme)) currentTheme = 'pearl';
+let { theme: currentTheme, mode: currentMode } = resolveAppearance(readPreference('theme'), readPreference('mode'));
 let glass = Math.max(35, Math.min(95, Number(readPreference('glass', 72)) || 72));
 let tinted = readPreference('tint', 'false') === 'true';
 const sounds = new ClickSounds(readPreference('muted', 'false') === 'true');
 
 const windowSizes = {
   about: [1000, 610], experience: [880, 670], work: [1040, 700],
-  skills: [860, 620], contact: [680, 490], resume: [900, 700], appearance: [540, 690],
+  skills: [860, 620], contact: [680, 490], resume: [900, 700], appearance: [760, 720],
 };
 const definitions = Object.fromEntries([
   ...navigation,
@@ -39,9 +39,25 @@ function setTheme(theme, persist = true) {
   if (!Object.hasOwn(themes, theme)) return;
   currentTheme = theme;
   document.documentElement.dataset.theme = theme;
-  $$('button[data-theme]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.theme === theme)));
-  $('meta[name="theme-color"]').content = themes[theme].color;
-  if (persist) savePreference('theme', theme);
+  document.documentElement.dataset.mode = currentMode;
+  for (const [token, value] of Object.entries(themeTokens(theme, currentMode))) document.documentElement.style.setProperty(token, value);
+  $$('button[data-theme]').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.theme === theme));
+    const variant = themes[button.dataset.theme][currentMode];
+    button.style.setProperty('--preview-start', variant.folds[0]);
+    button.style.setProperty('--preview-middle', variant.wallpaper);
+    button.style.setProperty('--preview-end', variant.folds[1]);
+    button.style.setProperty('--preview-panel', variant.panel);
+  });
+  $$('button[data-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.mode === currentMode)));
+  $('meta[name="theme-color"]').content = themes[theme][currentMode].wallpaper;
+  if (persist) { savePreference('theme', theme); savePreference('mode', currentMode); }
+}
+
+function setMode(mode) {
+  if (!Object.hasOwn(modes, mode)) return;
+  currentMode = mode;
+  setTheme(currentTheme);
 }
 
 function setGlass(value, persist = true) {
@@ -241,6 +257,8 @@ document.addEventListener('click', event => {
   if (!event.target.closest('.menu-wrap')) closeMenus();
   const theme = event.target.closest('button[data-theme]');
   if (theme) { setTheme(theme.dataset.theme); return; }
+  const mode = event.target.closest('button[data-mode]');
+  if (mode) { setMode(mode.dataset.mode); return; }
   const close = event.target.closest('[data-close]');
   if (close) { $(`#${close.dataset.close}`).close(); return; }
   const nav = event.target.closest('[data-nav]');
@@ -316,10 +334,10 @@ window.addEventListener('hashchange', () => {
 });
 window.addEventListener('resize', () => requestAnimationFrame(moveLens));
 document.addEventListener('error', event => {
-  if (event.target instanceof HTMLImageElement && event.target.classList.contains('portrait-image')) {
-    event.target.closest('.portrait-frame').classList.remove('has-image');
+  if (event.target instanceof HTMLImageElement && event.target.hasAttribute('data-profile-photo')) {
+    event.target.closest('.portrait-frame')?.classList.remove('has-image');
     event.target.remove();
-    console.warn('The portrait could not load. The placeholder is displayed instead.');
+    console.warn('The profile photo could not load; the text profile remains available.');
   }
 }, true);
 

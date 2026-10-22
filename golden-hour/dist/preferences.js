@@ -1,9 +1,3 @@
-export const themes = {
-  pearl: { label: 'Light', description: 'Crisp neutrals', color: '#d7dce6' },
-  dusk: { label: 'Dark', description: 'Deep graphite', color: '#2c2c2e' },
-  sage: { label: 'Sage', description: 'Muted green', color: '#cbd6c4' },
-};
-
 let storageWarningShown = false;
 
 function warnStorage(error) {

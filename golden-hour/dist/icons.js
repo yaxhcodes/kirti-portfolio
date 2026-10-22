@@ -12,6 +12,8 @@ const paths = {
   download: '<path d="M12 3v12m-5-5 5 5 5-5M4 16v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/>',
   settings: '<path d="m9.5 3-.7 2.2-2.2 1L4.4 6 2 10l1.5 1.8v2.4L2 16l2.4 4 2.2-.2 2.2 1 .7 2.2h5l.7-2.2 2.2-1 2.2.2L22 16l-1.5-1.8v-2.4L22 10l-2.4-4-2.2.2-2.2-1L14.5 3Z" transform="translate(1 -1) scale(.92)"/><circle cx="12" cy="12" r="3.5"/>',
   check: '<path d="m5 12 4 4L19 6"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/>',
+  moon: '<path d="M20.8 13A9 9 0 0 1 11 3.2 9 9 0 1 0 20.8 13Z"/>',
   layers: '<path d="m12 3 10 5-10 5L2 8Zm-10 9 10 5 10-5M2 16l10 5 10-5"/>',
   chart: '<path d="M3 3v18h18M7 16l4-5 4 2 6-8"/>',
   cube: '<path d="m12 2 10 5v10l-10 5-10-5V7Zm0 10L2 7m10 5 10-5m-10 5v10M7 4.5l10 5"/>',

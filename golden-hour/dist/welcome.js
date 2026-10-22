@@ -10,8 +10,8 @@ export const greetings = [
   { id: 'hola', language: 'es', text: 'hola' },
 ];
 
-const stepDuration = 850;
-const fadeDuration = 400;
+const stepDuration = 1180;
+const fadeDuration = 500;
 
 function claimFirstVisit() {
   if (readPreference(preference) === 'true') return false;
@@ -59,16 +59,37 @@ export function showFirstVisitWelcome({ replay = false } = {}) {
     dialog.close();
   };
   dialog.classList.remove('is-leaving');
-  selectGreeting(0);
   dialog.addEventListener('close', dismiss, { once: true });
   dialog.addEventListener('cancel', dismiss, { once: true });
   dialog.querySelector('[data-dismiss-welcome]').addEventListener('click', dismiss, { once: true });
   window.addEventListener('pagehide', dismiss, { once: true });
   dialog.showModal();
-  if (!reducedMotion) {
-    greetings.slice(1).forEach((_, index) => timers.push(setTimeout(() => selectGreeting(index + 1), stepDuration * (index + 1))));
-    timers.push(setTimeout(() => { dialog.classList.add('is-leaving'); }, stepDuration * greetings.length));
-    timers.push(setTimeout(dismiss, stepDuration * greetings.length + fadeDuration));
+  const start = () => {
+    if (dismissed) return;
+    selectGreeting(0);
+    if (!reducedMotion) {
+      greetings.slice(1).forEach((_, index) => timers.push(setTimeout(() => selectGreeting(index + 1), stepDuration * (index + 1))));
+      timers.push(setTimeout(() => { dialog.classList.add('is-leaving'); }, stepDuration * greetings.length));
+      timers.push(setTimeout(dismiss, stepDuration * greetings.length + fadeDuration));
+    }
+  };
+  if (document.fonts?.load) {
+    let started = false;
+    const startOnce = () => {
+      if (started || dismissed) return;
+      started = true;
+      clearTimeout(fontWait);
+      start();
+    };
+    const fontWait = setTimeout(startOnce, 600);
+    timers.push(fontWait);
+    Promise.all([
+      document.fonts.load('600 160px "Welcome Script"', 'hello bonjour hola'),
+      document.fonts.load('400 130px "Welcome Devanagari"', 'नमस्ते'),
+      document.fonts.load('400 90px "Welcome Japanese"', 'こんにちは'),
+    ]).catch(error => console.warn('Welcome fonts could not load; using system lettering:', error.name)).then(startOnce);
+  } else {
+    start();
   }
   return true;
 }

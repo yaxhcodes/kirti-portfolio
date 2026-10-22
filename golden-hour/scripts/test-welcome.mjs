@@ -41,16 +41,16 @@ try {
   assert.equal(dialog.dataset.greeting, 'hello');
   assert.deepEqual([...dialog.querySelectorAll('.welcome-word')].map(word => word.textContent), ['hello', 'नमस्ते', 'bonjour', 'こんにちは', 'hola']);
   assert.equal(dialog.querySelector('.is-current').textContent, 'hello');
-  for (const [delay, id, text, language] of [[850, 'namaste', 'नमस्ते', 'hi'], [1700, 'bonjour', 'bonjour', 'fr'], [2550, 'konnichiwa', 'こんにちは', 'ja'], [3400, 'hola', 'hola', 'es']]) {
+  for (const [delay, id, text, language] of [[1180, 'namaste', 'नमस्ते', 'hi'], [2360, 'bonjour', 'bonjour', 'fr'], [3540, 'konnichiwa', 'こんにちは', 'ja'], [4720, 'hola', 'hola', 'es']]) {
     timers.get(delay)();
     assert.equal(dialog.dataset.greeting, id);
     assert.equal(dialog.querySelectorAll('.is-current').length, 1);
     assert.equal(dialog.querySelector('.is-current').textContent, text);
     assert.equal(dialog.querySelector('.is-current').getAttribute('lang'), language);
   }
-  timers.get(4250)();
+  timers.get(5900)();
   assert.equal(dialog.classList.contains('is-leaving'), true);
-  timers.get(4650)();
+  timers.get(6400)();
   assert.equal(dialog.open, false);
   assert.equal(timers.size, 0);
   ({ dialog } = fixture());
@@ -60,6 +60,18 @@ try {
   assert.equal(showFirstVisitWelcome({ replay: true }), false, 'An open greeting cannot start overlapping timers');
   assert.equal(local.get(key), 'true');
   dialog.close();
+  assert.equal(timers.size, 0);
+
+  local.clear();
+  ({ window, dialog } = fixture());
+  const fontResolvers = [];
+  document.fonts = { load: () => new Promise(resolve => fontResolvers.push(resolve)) };
+  assert.equal(showFirstVisitWelcome(), true);
+  assert.equal(dialog.querySelector('.is-current'), null, 'Lettering waits briefly for its fonts');
+  dialog.querySelector('[data-dismiss-welcome]').dispatchEvent(new window.Event('click'));
+  fontResolvers.forEach(resolve => resolve([]));
+  await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+  assert.equal(dialog.open, false, 'Late font loading cannot reopen a dismissed greeting');
   assert.equal(timers.size, 0);
 
   local.clear();

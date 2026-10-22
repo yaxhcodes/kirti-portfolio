@@ -3,7 +3,7 @@ export const profile = {
   name: 'Kirti',
   fullName: 'Kirti Joshi',
   role: 'Senior Software Engineer',
-  portrait: '',
+  portrait: 'assets/kirti-photo.webp',
   email: 'kirti@example.com',
   linkedin: 'https://example.com/kirti/linkedin',
   github: 'https://example.com/kirti/github',

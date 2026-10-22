@@ -1,5 +1,7 @@
 import { profile, professionalSummary, site } from '../dist/profile.js';
 import { escapeHtml as e } from '../dist/icons.js';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 
 export function buildMetadata(publicUrl = site.url) {
   let base = null;
@@ -11,7 +13,9 @@ export function buildMetadata(publicUrl = site.url) {
   const name = profile.fullName || profile.name;
   const title = `${name} — ${profile.role} | React & TypeScript`;
   const description = `${name} is a ${profile.role} with ${profile.experience} years building accessible React and TypeScript applications for enterprise and financial services.`;
-  const image = base ? new URL('assets/og-image.png', base).href : 'assets/og-image.png';
+  const imageVersion = createHash('sha256').update(readFileSync(new URL('../dist/assets/og-image.png', import.meta.url))).digest('hex').slice(0, 12);
+  const imagePath = `assets/og-image.png?v=${imageVersion}`;
+  const image = base ? new URL(imagePath, base).href : imagePath;
   const imageAlt = `${name}, ${profile.role}. ${profile.experience} years of experience. React, TypeScript, and accessibility.`;
   const person = {
     '@type': 'Person', name, jobTitle: profile.role, description: professionalSummary,

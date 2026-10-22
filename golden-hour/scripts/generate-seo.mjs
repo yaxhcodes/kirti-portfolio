@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
-import { aboutView } from '../dist/views.js';
+import { aboutView, desktopIdentity } from '../dist/views.js';
 import { icon } from '../dist/icons.js';
 import { buildMetadata } from './site-metadata.mjs';
 
@@ -24,6 +24,7 @@ const initialWindow = template.trim()
   .replaceAll('class="traffic minimize"', 'class="traffic minimize" aria-label="Minimize About window"')
   .replaceAll('class="traffic maximize"', 'class="traffic maximize" aria-label="Expand About window"');
 replaceBlock('initial-profile', initialWindow);
+replaceBlock('desktop-identity', desktopIdentity());
 writeFileSync(file, html);
 const sitemap = new URL('../dist/sitemap.xml', import.meta.url);
 if (metadata.base) {

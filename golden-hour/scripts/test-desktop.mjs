@@ -6,6 +6,7 @@ import { aboutView } from '../dist/views.js';
 import { initialSection } from '../dist/routing.js';
 import { resizeBounds } from '../dist/window-resizer.js';
 import { FolderLayout } from '../dist/folder-layout.js';
+import { themes, modes, themeTokens, resolveAppearance } from '../dist/themes.js';
 
 const { parseHTML } = createRequire(import.meta.url)('linkedom');
 const { window, document } = parseHTML(readFileSync(new URL('../dist/index.html', import.meta.url), 'utf8'));
@@ -18,15 +19,31 @@ function luminance(hex) {
   const rgb = hex.trim().replace('#', '').match(/../g).map(channel => parseInt(channel, 16) / 255);
   return rgb.map(channel => channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4).reduce((sum, channel, index) => sum + channel * [.2126, .7152, .0722][index], 0);
 }
-for (const theme of [':root', ':root[data-theme="dusk"]', ':root[data-theme="sage"]']) {
-  const rule = [...stylesheet.sheet.cssRules].find(item => item.selectorText === theme);
-  assert.ok(rule, `${theme} is defined`);
-  const background = '#' + rule.style.getPropertyValue('--panel').split(',').map(channel => Number(channel.trim()).toString(16).padStart(2, '0')).join('');
-  for (const token of ['--ink', '--muted', '--faint']) {
-    const [dark, light] = [luminance(rule.style.getPropertyValue(token)), luminance(background)].sort((a, b) => a - b);
-    assert.ok((light + .05) / (dark + .05) >= 4.5, `${theme} ${token} has sufficient text contrast on its panel color`);
+function contrast(first, second) {
+  const [dark, light] = [luminance(first), luminance(second)].sort((a, b) => a - b);
+  return (light + .05) / (dark + .05);
+}
+for (const mode of Object.keys(modes)) {
+  const selector = mode === 'light' ? ':root' : ':root[data-mode="dark"]';
+  const rule = [...stylesheet.sheet.cssRules].find(item => item.selectorText === selector);
+  assert.ok(rule, `${mode} has shared surface and text rules`);
+  for (const [theme, palette] of Object.entries(themes)) {
+    const variant = palette[mode];
+    const background = '#' + variant.panel.split(',').map(channel => Number(channel.trim()).toString(16).padStart(2, '0')).join('');
+    for (const token of ['--ink', '--muted', '--faint']) {
+      assert.ok(contrast(rule.style.getPropertyValue(token), background) >= 4.5, `${theme}/${mode} ${token} has readable text contrast`);
+    }
+    assert.ok(contrast(variant.accent, background) >= 4.5, `${theme}/${mode} links have readable contrast`);
+    const selectionInk = mode === 'light' ? '#ffffff' : rule.style.getPropertyValue('--ink');
+    assert.ok(contrast(selectionInk, mode === 'light' ? variant.accent : variant.soft) >= 4.5, `${theme}/${mode} selected text stays readable`);
   }
 }
+const defaultRule = [...stylesheet.sheet.cssRules].find(item => item.selectorText === ':root');
+for (const [token, value] of Object.entries(themeTokens('silver', 'light'))) assert.equal(defaultRule.style.getPropertyValue(token).trim(), value, 'The initial CSS matches the default palette');
+assert.deepEqual(resolveAppearance('pearl'), { theme: 'silver', mode: 'light' });
+assert.deepEqual(resolveAppearance('dusk'), { theme: 'silver', mode: 'dark' });
+assert.deepEqual(resolveAppearance('sage', 'dark'), { theme: 'sage', mode: 'dark' });
+assert.deepEqual(resolveAppearance('missing', 'missing'), { theme: 'silver', mode: 'light' });
 const storage = new Map([['kirti-welcome-seen-v1', 'true'], ['kirti-tint', 'true']]);
 let clock = 1000;
 let audioPulses = 0;
@@ -180,6 +197,8 @@ assert.match($('#window-about').textContent, /KIRTI JOSHI/);
 assert.equal($$('.desktop-folder').length, 3);
 assert.match($('#window-about').textContent, /8\+ years/);
 assert.ok($('#window-about .portrait-placeholder'));
+const configuredPortrait = profile.portrait;
+assert.equal($('#window-about .portrait-image')?.getAttribute('src'), configuredPortrait || undefined);
 profile.portrait = 'assets/portrait-example.webp';
 const portraitFixture = document.createElement('div');
 portraitFixture.innerHTML = aboutView();
@@ -195,7 +214,7 @@ assert.equal(portraitFixture.querySelector('.portrait-image'), null);
 assert.equal(portraitFixture.querySelector('.portrait-frame').classList.contains('has-image'), false);
 assert.equal(portraitWarnings.length, 1);
 portraitFixture.remove();
-profile.portrait = '';
+profile.portrait = configuredPortrait;
 assert.doesNotMatch(document.body.textContent, /♡|♥|little universe|lovely to have/);
 const about = $('#window-about');
 const hovered = $('#dock [data-nav="work"]');
@@ -387,9 +406,20 @@ click('.tint-switch');
 assert.equal(document.documentElement.dataset.tint, 'clear');
 assert.equal(storage.get('kirti-tint'), 'false');
 assert.equal($('.tint-switch').getAttribute('aria-checked'), 'false');
-click('#window-appearance [data-theme="dusk"]');
-assert.equal(document.documentElement.dataset.theme, 'dusk');
-assert.equal(storage.get('kirti-theme'), 'dusk');
+assert.equal($$('#window-appearance [data-theme]').length, 5);
+for (const theme of Object.keys(themes)) {
+  for (const mode of Object.keys(modes)) {
+    click(`#window-appearance [data-theme="${theme}"]`);
+    click(`#window-appearance [data-mode="${mode}"]`);
+    assert.equal(document.documentElement.dataset.theme, theme);
+    assert.equal(document.documentElement.dataset.mode, mode);
+    assert.equal(document.documentElement.style.getPropertyValue('--panel'), themes[theme][mode].panel);
+    assert.equal($$('#window-appearance [data-theme][aria-pressed="true"]').length, 1);
+    assert.equal($$('#window-appearance [data-mode][aria-pressed="true"]').length, 1);
+  }
+}
+assert.equal(storage.get('kirti-theme'), 'rosewood');
+assert.equal(storage.get('kirti-mode'), 'dark');
 assert.equal(document.documentElement.dataset.tint, 'clear', 'Theme selection is independent of tint');
 click('.tint-switch');
 assert.equal(document.documentElement.dataset.tint, 'tinted');
@@ -398,6 +428,8 @@ click('#window-appearance .traffic.close');
 await until(() => !$('#window-appearance'), 'Appearance closes');
 await open('appearance');
 assert.equal($('.tint-switch').getAttribute('aria-checked'), 'true', 'New windows synchronize their tint control');
+assert.equal($('#window-appearance [data-theme="rosewood"]').getAttribute('aria-pressed'), 'true');
+assert.equal($('#window-appearance [data-mode="dark"]').getAttribute('aria-pressed'), 'true');
 click('[data-action="replay-welcome"]');
 assert.equal($('#welcome').open, true);
 assert.equal($$('#welcome .welcome-word').length, 5, 'Replay opens the multilingual glass greeting');

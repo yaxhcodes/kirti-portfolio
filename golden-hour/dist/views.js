@@ -1,5 +1,5 @@
 import { profile, professionalSummary, experience, projects, skillGroups } from './profile.js';
-import { themes } from './preferences.js';
+import { themes, modes } from './themes.js';
 import { icon, escapeHtml as e } from './icons.js';
 import { brandIcon } from './brands.js';
 
@@ -13,7 +13,11 @@ function projectClient(project) {
 
 function portrait() {
   const name = profile.fullName || profile.name;
-  return `<div class="hero-portrait"><div class="portrait-frame ${profile.portrait ? 'has-image' : ''}">${profile.portrait ? `<img class="portrait-image" src="${e(profile.portrait)}" alt="${e(name)}" width="480" height="600" decoding="async">` : ''}<div class="portrait-placeholder" aria-label="Portrait placeholder">${icon('person')}<span class="portrait-initial">${e(name.slice(0, 1))}</span><span class="portrait-caption">Portrait</span></div></div></div>`;
+  return `<div class="hero-portrait"><div class="portrait-frame ${profile.portrait ? 'has-image' : ''}">${profile.portrait ? `<img class="portrait-image" data-profile-photo src="${e(profile.portrait)}" alt="${e(name)}" width="900" height="1200" decoding="async">` : ''}<div class="portrait-placeholder" aria-label="Portrait placeholder">${icon('person')}<span class="portrait-initial">${e(name.slice(0, 1))}</span><span class="portrait-caption">Portrait</span></div></div></div>`;
+}
+
+export function desktopIdentity() {
+  return `<div class="desktop-identity">${profile.portrait ? `<img class="identity-photo" data-profile-photo src="${e(profile.portrait)}" alt="" width="66" height="88" decoding="async">` : ''}<div><h1>${e(profile.fullName || profile.name)}</h1><p>${e(profile.role)}</p><button class="identity-open" data-nav="about">Open portfolio ${icon('arrow')}</button></div></div>`;
 }
 
 export function aboutView() {
@@ -57,7 +61,9 @@ export function resumeView() {
 }
 
 export function appearanceView() {
-  return `<div class="page appearance-page">${heading('Appearance & sound.', 'Personalize this workspace. Preferences are saved on this device.')}<div class="theme-options" aria-label="Color theme">${Object.entries(themes).map(([id, theme]) => `<button class="theme-option" data-theme="${id}" aria-pressed="false"><span class="theme-preview"></span><strong>${theme.label}</strong><small>${theme.description}</small></button>`).join('')}</div><div class="preference-row"><div><strong>Glass depth</strong><span>Lightly frosted to softly diffused</span></div><input type="range" min="35" max="95" value="72" data-glass-range aria-label="Glass frosting intensity"></div><div class="preference-row"><div><strong>Tint glass</strong><span>Add a subtle color cast from your theme</span></div><button class="preference-switch tint-switch" data-action="tint" role="switch" aria-checked="false" aria-label="Tint glass"><span></span></button></div><div class="preference-row"><div><strong>Interface sounds</strong><span>Subtle feedback when activating controls</span></div><button class="preference-switch sound-switch" data-action="sound" role="switch" aria-checked="true" aria-label="Interface sounds"><span></span></button></div><div class="preference-row welcome-preference"><div><strong>Welcome greeting</strong><span>Plays automatically on your first visit</span></div><button class="preview-greeting" data-action="replay-welcome">Replay ${icon('arrowUp')}</button></div></div>`;
+  const paletteOptions = Object.entries(themes).map(([id, theme]) => `<button class="theme-option" data-theme="${id}" aria-pressed="false" style="--preview-start:${theme.light.folds[0]};--preview-middle:${theme.light.wallpaper};--preview-end:${theme.light.folds[1]};--preview-panel:${theme.light.panel}"><span class="theme-preview" aria-hidden="true"></span><strong>${theme.label}</strong><small>${theme.description}</small></button>`).join('');
+  const modeOptions = Object.entries(modes).map(([id, label]) => `<button data-mode="${id}" aria-pressed="false">${icon(id === 'light' ? 'sun' : 'moon')}${label}</button>`).join('');
+  return `<div class="page appearance-page">${heading('Appearance & sound.', 'A workspace that feels like you. Saved on this device.')}<div class="appearance-mode-row"><span>Appearance</span><div class="mode-options" role="group" aria-label="Light or dark appearance">${modeOptions}</div></div><div class="theme-options" role="group" aria-label="Color palette">${paletteOptions}</div><div class="preference-row"><div><strong>Glass depth</strong><span>Lightly frosted to softly diffused</span></div><input type="range" min="35" max="95" value="72" data-glass-range aria-label="Glass frosting intensity"></div><div class="preference-row"><div><strong>Tint glass</strong><span>Add a subtle color cast from your palette</span></div><button class="preference-switch tint-switch" data-action="tint" role="switch" aria-checked="false" aria-label="Tint glass"><span></span></button></div><div class="preference-row"><div><strong>Interface sounds</strong><span>Subtle feedback when activating controls</span></div><button class="preference-switch sound-switch" data-action="sound" role="switch" aria-checked="true" aria-label="Interface sounds"><span></span></button></div><div class="preference-row welcome-preference"><div><strong>Welcome greeting</strong><span>Plays automatically on your first visit</span></div><button class="preview-greeting" data-action="replay-welcome">Replay ${icon('arrowUp')}</button></div></div>`;
 }
 
 export function projectDetail(id) {

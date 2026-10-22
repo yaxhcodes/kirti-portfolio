@@ -18,7 +18,7 @@ npm run check
 
 ## Personalize
 
-Edit `dist/profile.js` to set `name`, `fullName`, `portrait`, `email`, `linkedin`, and `github`. For a portrait, copy her image into `dist/assets/` and set `portrait: 'assets/portrait.webp'` (or its actual filename). The placeholder is replaced automatically; a failed image returns to the placeholder.
+Edit `dist/profile.js` to set `name`, `fullName`, `portrait`, `email`, `linkedin`, and `github`. The supplied photograph is optimized as `assets/kirti-photo.webp` and appears in About, the desktop identity panel, and the social card. About uses a slightly closer crop, centered lower to retain the person and landscape. To replace it, copy a photo into `dist/assets/` and update `portrait`; a failed image returns to the text or placeholder.
 
 Contact currently uses `kirti@example.com` and reserved example-domain profile URLs, marked as sample contact details. Replace these values and set `contactIsDemo: false` for the real version. Empty values hide their contact actions. Use complete HTTPS URLs for social profiles. Experience, project descriptions, and skill groups live in the same file. Demo email addresses are omitted from generated resumes.
 
@@ -47,12 +47,12 @@ Set `PORTFOLIO_PYTHON` if the Python executable has a different name or path. Th
 - Desktop windows resize from all eight edges/corners. The lower-right handle also supports arrow keys, with Shift for larger steps. Minimum sizes and viewport bounds keep the toolbar and content usable above the dock. Resized dimensions survive minimizing and expand/restore; narrow windows reflow their content using container queries. Phones use fitted windows with resize handles hidden.
 - Red closes its window; amber minimizes it into the corresponding dock icon with a Genie animation. The continuous 49-frame curve has smooth acceleration and deceleration, with a narrow tail that holds its taper through the descent. Green expands/restores it. Drag or double-click the toolbar on desktop to move or expand the window. Background windows remain accessible on desktop.
 - Desktop hover magnifies dock icons with a damped spring. Neighbors scale and move outward as the dock expands, then return to rest on pointer exit. Geometry is measured on resize rather than on each animation frame. Magnification is disabled on narrow/touch layouts and with reduced motion.
-- Dock labels occupy a separate layer above every icon and rise with magnification, so an enlarged icon cannot cover its label.
+- Dock labels occupy a separate layer above every icon and rise with magnification, so an enlarged icon cannot cover its label. Icons and their parent group sit above the dock's glass rim; hovered and keyboard-focused icons rise above their neighbors.
 - Appearance & sound is a utility window and does not replace the current portfolio section in the URL. Refreshing an older `#appearance` link opens About. Links to portfolio sections continue to work.
-- A first visit shows “hello”, “नमस्ते”, “bonjour”, “こんにちは”, and “hola” as translucent glass lettering over the blurred desktop, with no panel behind the text. The sequence lasts under five seconds, with Skip intro and Escape support. The visit is remembered before playback, so refreshing does not restart the greeting. Appearance & sound includes Replay without resetting this preference. Reduced-motion visitors go straight to the portfolio; explicit Replay shows a still greeting. If persistent storage is unavailable, session storage remembers the visit; if neither works, the automatic intro is skipped.
+- A first visit shows “hello”, “नमस्ते”, “bonjour”, “こんにちは”, and “hola” as glass lettering over the blurred desktop, with no panel behind the text. Self-hosted handwriting fonts cover Latin, Devanagari, and Japanese consistently; [font sources and licenses](dist/assets/fonts/SOURCES.md) are included. The sequence takes about 6.4 seconds after a bounded font-loading wait, with Skip intro and Escape support. The visit is remembered before playback, so refreshing does not restart the greeting. Appearance & sound includes Replay without resetting this preference. Reduced-motion visitors go straight to the portfolio; explicit Replay shows a still greeting. If persistent storage is unavailable, session storage remembers the visit; if neither works, the automatic intro is skipped.
 - `Command/Ctrl + K` opens search; Up/Down and Enter navigate its results.
 - `Command/Ctrl + ,` opens Appearance & sound; `Command/Ctrl + /` opens shortcuts; Escape dismisses dialogs and menus.
-- Light, Dark, and Sage themes, glass depth, and the Tint glass switch are saved on the visitor's device. Tint adds a subtle theme-colored cast independently of frosting intensity. Chrome and the dock share translucent layers, directional highlights, and an inset rim. The greeting uses a translucent text fill and fine edge highlights, and follows the tint preference. Content panels remain opaque for readable text. Storage failures leave the interface usable.
+- Silver, Sage, Coffee, Ocean, and Rosewood each support independent Light and Dark modes. Palette, mode, glass depth, and tint are saved on the visitor's device. Older Light/Dark/Sage preferences migrate automatically. Color variants live in `dist/themes.js`; shared text and glass rules live in the stylesheet. Tint adds a subtle palette-colored cast independently of frosting intensity. Content panels remain opaque for readability, the desktop identity has its own frosted surface, and selected text has explicit foreground and background colors. Storage failures leave the interface usable.
 - Subtle synthesized click sounds play after activating controls. Mute them from the menu bar or preferences. The mute setting persists on this device. No audio files are downloaded, and audio failure leaves the interface usable.
 - On phones, the focused window fills the available workspace while other windows retain their state. Background controls become inert, projects use a single column, and the dock remains reachable.
 - Reduced motion removes window and interface animation. Standard browser focus rings, native modal focus handling, and named icon controls support keyboard use.
@@ -66,6 +66,7 @@ dist/
   index.html          Desktop chrome, dialogs, and page metadata
   styles.css          Themes, responsive layouts, and glass styling
   profile.js          Personal details and resume content
+  themes.js           Five paired palettes, mode tokens, and preference migration
   views.js            Modular content views and interface studies
   icons.js            Shared SVG icon vocabulary and HTML escaping
   app.js              Dock navigation, search, and UI events
@@ -92,13 +93,13 @@ No third-party scripts, remote fonts, analytics, or network services are needed 
 
 The HTML includes a descriptive title and summary, Open Graph and Twitter large-image tags, image dimensions and alt text, and ProfilePage/Person structured data derived from the shared profile. Sample contact links are excluded from structured data. The About content is included in the initial HTML. These changes follow [Google's JavaScript SEO guidance](https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics) and the [Open Graph specification](https://ogp.me/).
 
-`dist/assets/og-image.png` is the self-hosted 1200×630 social card. It uses native typography and shapes, with the portfolio's slate, white, and blue palette. To regenerate it after changing the name, role, or experience, use Python with Pillow:
+`dist/assets/og-image.png` is the self-hosted 1200×630 social card. It combines the supplied photograph with native typography and shapes in the Silver palette. To regenerate it after changing the name, role, experience, or photo, use Python with Pillow:
 
 ```sh
 node scripts/generate-social-card.mjs
 ```
 
-Set `PORTFOLIO_PYTHON` to the Python executable if needed. The authoring script currently uses Windows Georgia and Segoe UI fonts. It is not required to run the site.
+Set `PORTFOLIO_PYTHON` to the Python executable if needed. Then run `npm run build` to update the image URL's content fingerprint, which gives social platforms a fresh image address. The authoring script currently uses Windows Georgia and Segoe UI fonts. It is not required to run the site.
 
 The public production URL is `https://kirti-portfolio-yaxh.vercel.app/`. If the domain changes, update `site.url` in `dist/profile.js` and run `npm run prepare:seo`. This generates the canonical URL, `og:url`, absolute social image URLs, and a sitemap referenced by `robots.txt`; the deployment build also regenerates them. Keep the production page and image publicly accessible so social platforms can fetch their metadata. Previously shared links may retain a cached preview until the platform fetches them again.
 
@@ -109,7 +110,7 @@ The public production URL is `https://kirti-portfolio-yaxh.vercel.app/`. If the 
 
 ## Artwork
 
-The current About window uses a replaceable portrait placeholder. The earlier `dist/assets/glass-flower.webp` artwork is retained as an optional asset and is not displayed. It was created with the built-in imagegen tool, then resized and encoded as WebP. The wallpaper and interface graphics are native CSS/SVG.
+The photograph was supplied by the user, optimized to WebP, and displayed with a restrained crop. The earlier `dist/assets/glass-flower.webp` artwork is retained as an optional asset and is not displayed. It was created with the built-in imagegen tool, then resized and encoded as WebP. The wallpaper and interface graphics are native CSS/SVG.
 
 Final generation prompt:
 
